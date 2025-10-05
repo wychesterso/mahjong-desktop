@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.mahjong.mahjongdesktop.controllers.MainController">
+
+    <!-- top bar -->
+    <top>
+        <HBox spacing="10" style="-fx-padding: 10;" alignment="CENTER_LEFT">
+            <Label text="Sixteen Mahjong" style="-fx-font-size: 18px;" />
+            <Region fx:id="spacer" HBox.hgrow="ALWAYS"/>
+            <Button text="Logout" onAction="#logout" />
+        </HBox>
+    </top>
+
+    <!-- content area -->
+    <center>
+        <StackPane fx:id="contentArea" />
+    </center>
+</BorderPane>

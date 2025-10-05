@@ -10,4 +10,8 @@ public class AppState {
     public static String getJwt() {
         return jwt;
     }
+
+    public static void clear() {
+        jwt = null;
+    }
 }

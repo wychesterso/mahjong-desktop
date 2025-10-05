@@ -1,25 +1,17 @@
 package com.mahjong.mahjongdesktop;
 
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Scene;
-import javafx.stage.Stage;
-
-import java.io.IOException;
+import com.mahjong.mahjongdesktop.controllers.MainController;
 
 public class AppNavigator {
-    private static Stage primaryStage;
+    private static MainController mainController;
 
-    public static void setStage(Stage stage) {
-        primaryStage = stage;
+    public static void setMainController(MainController controller) {
+        mainController = controller;
     }
 
-    public static void switchTo(String fxmlFile) {
-        try {
-            FXMLLoader loader = new FXMLLoader(AppNavigator.class.getResource(fxmlFile));
-            Scene scene = new Scene(loader.load());
-            primaryStage.setScene(scene);
-        } catch (IOException e) {
-            e.printStackTrace();
+    public static void switchTo(String fxml) {
+        if (mainController != null) {
+            javafx.application.Platform.runLater(() -> mainController.loadView(fxml));
         }
     }
 }
