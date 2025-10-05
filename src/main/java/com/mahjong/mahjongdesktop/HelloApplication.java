@@ -7,9 +7,15 @@ import javafx.stage.Stage;
 
 public class HelloApplication extends Application {
     @Override
-    public void start(Stage stage) throws Exception {
+    public void start(Stage stage) {
         AppNavigator.setStage(stage);
-        AppNavigator.switchTo("login.fxml");
+
+        if (AppState.getJwt() != null) {
+            AppNavigator.switchTo("lobby.fxml");
+        } else {
+            AppNavigator.switchTo("login.fxml");
+        }
+
         stage.setTitle("Mahjong Client");
         stage.show();
     }
