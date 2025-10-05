@@ -1,12 +1,14 @@
-package com.mahjong.mahjongdesktop;
+package com.mahjong.mahjongdesktop.controllers;
 
+import com.mahjong.mahjongdesktop.AppNavigator;
+import com.mahjong.mahjongdesktop.AppState;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import okhttp3.*;
 
 import java.io.IOException;
 
-public class LoginController {
+public class RegisterController {
 
     @FXML private TextField usernameField;
     @FXML private PasswordField passwordField;
@@ -15,7 +17,7 @@ public class LoginController {
     private final OkHttpClient client = new OkHttpClient();
 
     @FXML
-    public void handleLogin() {
+    public void handleRegister() {
         String username = usernameField.getText();
         String password = passwordField.getText();
 
@@ -23,7 +25,7 @@ public class LoginController {
 
         RequestBody body = RequestBody.create(MediaType.parse("application/json"), json);
         Request request = new Request.Builder()
-                .url("http://localhost:8080/auth/login")
+                .url("http://localhost:8080/auth/register")
                 .post(body)
                 .build();
 
@@ -35,20 +37,20 @@ public class LoginController {
             public void onResponse(Call call, Response response) throws IOException {
                 if (response.isSuccessful()) {
                     String jwt = response.body().string();
-                    AppState.setJwt(jwt);  // store JWT
+                    AppState.setJwt(jwt); // store JWT
                     javafx.application.Platform.runLater(() -> {
                         AppNavigator.switchTo("lobby.fxml");
                     }); // navigate to lobby
                 } else {
-                    showError("Login failed: " + response.code());
+                    showError("Registration failed: " + response.code());
                 }
             }
         });
     }
 
     @FXML
-    private void handleGoToRegister() {
-        AppNavigator.switchTo("register.fxml");
+    private void handleGoToLogin() {
+        AppNavigator.switchTo("login.fxml");
     }
 
     private void showError(String message) {

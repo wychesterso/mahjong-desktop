@@ -1,4 +1,4 @@
-package com.mahjong.mahjongdesktop;
+package com.mahjong.mahjongdesktop.controllers;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;

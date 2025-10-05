@@ -1,12 +1,14 @@
-package com.mahjong.mahjongdesktop;
+package com.mahjong.mahjongdesktop.controllers;
 
+import com.mahjong.mahjongdesktop.AppNavigator;
+import com.mahjong.mahjongdesktop.AppState;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import okhttp3.*;
 
 import java.io.IOException;
 
-public class RegisterController {
+public class LoginController {
 
     @FXML private TextField usernameField;
     @FXML private PasswordField passwordField;
@@ -15,7 +17,7 @@ public class RegisterController {
     private final OkHttpClient client = new OkHttpClient();
 
     @FXML
-    public void handleRegister() {
+    public void handleLogin() {
         String username = usernameField.getText();
         String password = passwordField.getText();
 
@@ -23,7 +25,7 @@ public class RegisterController {
 
         RequestBody body = RequestBody.create(MediaType.parse("application/json"), json);
         Request request = new Request.Builder()
-                .url("http://localhost:8080/auth/register")
+                .url("http://localhost:8080/auth/login")
                 .post(body)
                 .build();
 
@@ -35,20 +37,20 @@ public class RegisterController {
             public void onResponse(Call call, Response response) throws IOException {
                 if (response.isSuccessful()) {
                     String jwt = response.body().string();
-                    AppState.setJwt(jwt); // store JWT
+                    AppState.setJwt(jwt);  // store JWT
                     javafx.application.Platform.runLater(() -> {
                         AppNavigator.switchTo("lobby.fxml");
                     }); // navigate to lobby
                 } else {
-                    showError("Registration failed: " + response.code());
+                    showError("Login failed: " + response.code());
                 }
             }
         });
     }
 
     @FXML
-    private void handleGoToLogin() {
-        AppNavigator.switchTo("login.fxml");
+    private void handleGoToRegister() {
+        AppNavigator.switchTo("register.fxml");
     }
 
     private void showError(String message) {
