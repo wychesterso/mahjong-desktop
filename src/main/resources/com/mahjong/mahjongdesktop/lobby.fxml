@@ -2,14 +2,34 @@
 
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.layout.VBox?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TableColumn?>
 
 <VBox xmlns="http://javafx.com/javafx"
       xmlns:fx="http://javafx.com/fxml"
-      alignment="CENTER"
-      spacing="20"
+      fx:controller="com.mahjong.mahjongdesktop.controllers.LobbyController"
+      alignment="TOP_CENTER"
+      spacing="15"
       style="-fx-padding: 20;">
 
-    <Label text="Lobby!" style="-fx-font-size: 24px;"/>
-    <Label text="This is a placeholder"/>
+    <Label text="Lobby" style="-fx-font-size: 28px; -fx-font-weight: bold;"/>
+
+    <!-- top bar with buttons -->
+    <HBox spacing="10">
+        <Button text="Create Room" onAction="#createRoom"/>
+        <Button text="Refresh" onAction="#refreshRooms"/>
+    </HBox>
+
+    <!-- table of rooms -->
+    <TableView fx:id="roomsTable" VBox.vgrow="ALWAYS" prefHeight="400">
+        <columns>
+            <TableColumn fx:id="roomIdColumn" text="Room ID" prefWidth="150"/>
+            <TableColumn fx:id="hostColumn" text="Host" prefWidth="150"/>
+            <TableColumn fx:id="playersColumn" text="Players" prefWidth="100"/>
+            <TableColumn fx:id="actionsColumn" text="Join" prefWidth="100"/>
+        </columns>
+    </TableView>
 
 </VBox>
