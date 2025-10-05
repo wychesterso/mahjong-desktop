@@ -99,6 +99,7 @@ public class LobbyController {
                         Platform.runLater(() -> {
                             // navigate to room page (implement navigation logic)
                             System.out.println("Room created: " + newRoomId);
+                            fetchRooms();
                             // TODO: navigateToRoom(newRoomId);
                         });
                     }
@@ -146,7 +147,7 @@ public class LobbyController {
     private void joinRoom(String roomId) {
         new Thread(() -> {
             try {
-                URL url = new URL("http://localhost:8080/room/" + roomId + "/join?seat=SEAT1");
+                URL url = new URL("http://localhost:8080/room/" + roomId + "/join");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("POST");
                 conn.setRequestProperty("Authorization", "Bearer " + AppState.getJwt());
@@ -155,6 +156,7 @@ public class LobbyController {
                 if (responseCode == 200) {
                     Platform.runLater(() -> {
                         System.out.println("Joined room: " + roomId);
+                        fetchRooms();
                         // TODO: navigateToRoom(roomId);
                     });
                 } else {
