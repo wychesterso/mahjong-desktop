@@ -1,5 +1,6 @@
 package com.mahjong.mahjongdesktop.controllers;
 
+import com.mahjong.mahjongdesktop.AppNavigator;
 import com.mahjong.mahjongdesktop.AppState;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
@@ -7,6 +8,7 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
 import javafx.util.Callback;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -47,7 +49,7 @@ public class LobbyController {
         addJoinButtonToTable();
         roomsTable.setItems(rooms);
 
-        fetchRooms();
+        refreshRooms();
     }
 
     private void addJoinButtonToTable() {
@@ -55,19 +57,57 @@ public class LobbyController {
             @Override
             public TableCell<Room, Void> call(final TableColumn<Room, Void> param) {
                 return new TableCell<>() {
+
                     private final Button joinBtn = new Button("Join");
+                    private final Button viewBtn = new Button("View");
+                    private final Button rejoinBtn = new Button("Rejoin");
+                    private final HBox buttonBox = new HBox(5);
 
                     {
+                        // JOIN
                         joinBtn.setOnAction(event -> {
                             Room room = getTableView().getItems().get(getIndex());
                             joinRoom(room.getRoomId());
+                        });
+
+                        // VIEW
+                        viewBtn.setOnAction(event -> {
+                            Room room = getTableView().getItems().get(getIndex());
+                            navigateToRoom(room.getRoomId());
+                        });
+
+                        // REJOIN
+                        rejoinBtn.setOnAction(event -> {
+                            Room room = getTableView().getItems().get(getIndex());
+                            navigateToRoom(room.getRoomId());
                         });
                     }
 
                     @Override
                     protected void updateItem(Void item, boolean empty) {
                         super.updateItem(item, empty);
-                        setGraphic(empty ? null : joinBtn);
+
+                        if (empty) {
+                            setGraphic(null);
+                            return;
+                        }
+
+                        Room room = getTableView().getItems().get(getIndex());
+                        String currentRoomId = AppState.getCurrentRoomId();
+                        buttonBox.getChildren().clear();
+
+                        if (currentRoomId == null) {
+                            // user not in any room → show Join + View
+                            buttonBox.getChildren().addAll(joinBtn, viewBtn);
+                        } else if (currentRoomId.equals(room.getRoomId())) {
+                            // user in this room → show Rejoin
+                            buttonBox.getChildren().add(rejoinBtn);
+                        } else {
+                            // user in another room → show View
+                            buttonBox.getChildren().add(viewBtn);
+                        }
+
+                        setGraphic(buttonBox);
                     }
                 };
             }
@@ -99,8 +139,8 @@ public class LobbyController {
                         Platform.runLater(() -> {
                             // navigate to room page (implement navigation logic)
                             System.out.println("Room created: " + newRoomId);
-                            fetchRooms();
-                            // TODO: navigateToRoom(newRoomId);
+                            refreshRooms();
+                            navigateToRoom(newRoomId);
                         });
                     }
                 } else {
@@ -115,6 +155,7 @@ public class LobbyController {
 
     @FXML
     public void refreshRooms() {
+        fetchCurrentRoom();
         fetchRooms();
     }
 
@@ -144,6 +185,39 @@ public class LobbyController {
         }).start();
     }
 
+    private void fetchCurrentRoom() {
+        new Thread(() -> {
+            try {
+                URL url = new URL("http://localhost:8080/room/current-room");
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setRequestProperty("Authorization", "Bearer " + AppState.getJwt());
+
+                int responseCode = conn.getResponseCode();
+                if (responseCode == 200) {
+                    try (BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+                        String roomId = in.readLine();
+                        Platform.runLater(() -> {
+                            AppState.setCurrentRoomId(roomId);
+                            roomsTable.refresh();
+                        });
+                    }
+                } else if (responseCode == 204) { // not in a room
+                    Platform.runLater(() -> {
+                        AppState.setCurrentRoomId(null);
+                        roomsTable.refresh();
+                    });
+                } else {
+                    System.err.println("Failed to fetch current room: " + responseCode);
+                }
+
+                conn.disconnect();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
     private void joinRoom(String roomId) {
         new Thread(() -> {
             try {
@@ -155,9 +229,10 @@ public class LobbyController {
                 int responseCode = conn.getResponseCode();
                 if (responseCode == 200) {
                     Platform.runLater(() -> {
+                        AppState.setCurrentRoomId(roomId);
                         System.out.println("Joined room: " + roomId);
-                        fetchRooms();
-                        // TODO: navigateToRoom(roomId);
+                        refreshRooms();
+                        navigateToRoom(roomId);
                     });
                 } else {
                     System.err.println("Failed to join room: " + responseCode);
@@ -167,6 +242,13 @@ public class LobbyController {
                 e.printStackTrace();
             }
         }).start();
+    }
+
+    private void navigateToRoom(String roomId) {
+        System.out.println("Navigating to room page: " + roomId);
+//        javafx.application.Platform.runLater(() -> {
+//            AppNavigator.switchTo("room.fxml");
+//        });
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
