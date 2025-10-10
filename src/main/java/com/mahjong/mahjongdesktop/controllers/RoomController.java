@@ -167,7 +167,39 @@ public class RoomController {
     }
 
     private void handleKick(String seat) {
+        String roomId = AppState.getCurrentRoomId();
+        if (roomId == null) return;
 
+        // determine if seat contains bot or a human
+        PlayerRow row = players.stream()
+                .filter(r -> r.getSeat().equals(seat))
+                .findFirst()
+                .orElse(null);
+
+        if (row == null) return;
+
+        boolean isBot = row.getBotStatus().contains("🤖");
+        String endpoint = isBot ? "/remove-bot" : "/kick";
+
+        new Thread(() -> {
+            try {
+                URL url = new URL("http://localhost:8080/room/" + roomId + endpoint + "?seat=" + seat);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Authorization", "Bearer " + AppState.getJwt());
+                conn.setDoOutput(true);
+
+                int responseCode = conn.getResponseCode();
+                if (responseCode == 200) {
+                    Platform.runLater(this::loadRoomInfo);
+                } else {
+                    Platform.runLater(() -> showError("Failed to kick " + (isBot ? "bot" : "player") + ". (" + responseCode + ")"));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                Platform.runLater(() -> showError("Error kicking " + (isBot ? "bot" : "player") + "."));
+            }
+        }).start();
     }
 
     private void handleTransferHost(String seat) {
