@@ -16,6 +16,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import javafx.scene.layout.HBox;
 
 public class RoomController {
 
@@ -28,6 +29,7 @@ public class RoomController {
     @FXML private TableColumn<PlayerRow, String> seatColumn;
     @FXML private TableColumn<PlayerRow, String> playerNameColumn;
     @FXML private TableColumn<PlayerRow, String> botColumn;
+    @FXML private TableColumn<PlayerRow, Void> actionColumn;
     @FXML private Button refreshButton;
     @FXML private Button leaveButton;
 
@@ -41,6 +43,8 @@ public class RoomController {
         botColumn.setCellValueFactory(new PropertyValueFactory<>("botStatus"));
 
         playersTable.setItems(players);
+        setupActionColumn();
+
         playersTable.setRowFactory(tv -> {
             TableRow<PlayerRow> row = new TableRow<>();
             row.setOnMouseClicked(event -> {
@@ -75,6 +79,80 @@ public class RoomController {
         loadRoomInfo();
     }
 
+    private void setupActionColumn() {
+        actionColumn.setCellFactory(col -> new TableCell<>() {
+            private final Button addBotBtn = new Button("Add Bot");
+            private final Button kickBtn = new Button("Kick");
+            private final Button transferBtn = new Button("Transfer Host");
+
+            {
+                addBotBtn.setOnAction(e -> {
+                    PlayerRow row = getTableView().getItems().get(getIndex());
+                    handleAddBot(row.getSeat());
+                });
+
+                kickBtn.setOnAction(e -> {
+                    PlayerRow row = getTableView().getItems().get(getIndex());
+                    handleKick(row.getSeat());
+                });
+
+                transferBtn.setOnAction(e -> {
+                    PlayerRow row = getTableView().getItems().get(getIndex());
+                    handleTransferHost(row.getSeat());
+                });
+            }
+
+            @Override
+            protected void updateItem(Void item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty) {
+                    setGraphic(null);
+                    return;
+                }
+
+                PlayerRow row = getTableView().getItems().get(getIndex());
+                String currentUser = AppState.getUserId();
+                String hostId = AppState.getCurrentHostId();
+
+                if (!Objects.equals(currentUser, hostId)) {
+                    // not host - no buttons
+                    setGraphic(null);
+                    return;
+                }
+
+                HBox box = new HBox(6);
+
+                if ("Vacant".equals(row.getPlayerName())) {
+                    // vacant seat - can add bot
+                    box.getChildren().add(addBotBtn);
+                } else {
+                    boolean isBot = row.getBotStatus().contains("🤖");
+                    if (isBot) {
+                        // bot occupied - can kick
+                        box.getChildren().add(kickBtn);
+                    } else {
+                        // human occupied - can kick or transfer host
+                        box.getChildren().addAll(kickBtn, transferBtn);
+                    }
+                }
+
+                setGraphic(box);
+            }
+        });
+    }
+
+    private void handleAddBot(String seat) {
+
+    }
+
+    private void handleKick(String seat) {
+
+    }
+
+    private void handleTransferHost(String seat) {
+
+    }
+
     private void loadRoomInfo() {
         String roomId = AppState.getCurrentRoomId();
         if (roomId == null) {
@@ -95,6 +173,8 @@ public class RoomController {
                     });
                     return;
                 }
+
+                AppState.setCurrentHostId(dto.getHostId());
 
                 Platform.runLater(() -> updateUI(dto));
 

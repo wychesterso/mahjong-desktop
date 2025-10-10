@@ -38,6 +38,9 @@
             <TableColumn fx:id="botColumn"
                          text="Type"
                          prefWidth="150" />
+            <TableColumn fx:id="actionColumn"
+                         text="Actions"
+                         prefWidth="250" />
         </columns>
     </TableView>
 
