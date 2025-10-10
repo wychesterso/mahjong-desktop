@@ -19,6 +19,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class RoomController {
 
+    private static final List<String> SEATS = List.of("EAST", "SOUTH", "WEST", "NORTH");
+
     @FXML private Label roomTitleLabel;
     @FXML private Label hostLabel;
     @FXML private Label seatsLabel;
@@ -91,12 +93,17 @@ public class RoomController {
 
         players.clear();
 
-        // merge player and bot info
-        for (Map.Entry<String, String> entry : dto.getPlayerNames().entrySet()) {
-            String seat = entry.getKey();
-            String playerName = entry.getValue();
-            boolean isBot = dto.getBotStatuses().getOrDefault(seat, false);
-            players.add(new PlayerRow(seat, playerName, isBot ? "🤖 Bot" : "🙎 Human"));
+        // display seats in order
+        for (String seat : SEATS) {
+            String playerName = dto.getPlayerNames().get(seat);
+            Boolean bot = dto.getBotStatuses().get(seat);
+
+            if (playerName == null) {
+                players.add(new PlayerRow(seat, "Vacant", "—"));
+            } else {
+                String type = (bot != null && bot) ? "🤖 Bot" : "🙎 Human";
+                players.add(new PlayerRow(seat, playerName, type));
+            }
         }
     }
 
