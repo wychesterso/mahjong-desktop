@@ -203,7 +203,28 @@ public class RoomController {
     }
 
     private void handleTransferHost(String seat) {
+        String roomId = AppState.getCurrentRoomId();
+        if (roomId == null) return;
 
+        new Thread(() -> {
+            try {
+                URL url = new URL("http://localhost:8080/room/" + roomId + "/transfer-host?seat=" + seat);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Authorization", "Bearer " + AppState.getJwt());
+                conn.setDoOutput(true);
+
+                int responseCode = conn.getResponseCode();
+                if (responseCode == 200) {
+                    Platform.runLater(this::loadRoomInfo);
+                } else {
+                    Platform.runLater(() -> showError("Failed to transfer host. (" + responseCode + ")"));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                Platform.runLater(() -> showError("Error transferring host."));
+            }
+        }).start();
     }
 
     private void loadRoomInfo() {
