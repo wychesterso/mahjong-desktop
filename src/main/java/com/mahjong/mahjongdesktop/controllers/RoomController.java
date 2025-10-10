@@ -114,8 +114,8 @@ public class RoomController {
                 String currentUser = AppState.getUserId();
                 String hostId = AppState.getCurrentHostId();
 
-                if (!Objects.equals(currentUser, hostId)) {
-                    // not host - no buttons
+                // user is not host OR row is user - no buttons
+                if (!Objects.equals(currentUser, hostId) || row.getPlayerName().equals(AppState.getUserId())) {
                     setGraphic(null);
                     return;
                 }
