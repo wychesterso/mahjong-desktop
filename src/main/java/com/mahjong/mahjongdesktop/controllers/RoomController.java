@@ -39,7 +39,20 @@ public class RoomController {
         seatColumn.setCellValueFactory(new PropertyValueFactory<>("seat"));
         playerNameColumn.setCellValueFactory(new PropertyValueFactory<>("playerName"));
         botColumn.setCellValueFactory(new PropertyValueFactory<>("botStatus"));
+
         playersTable.setItems(players);
+        playersTable.setRowFactory(tv -> {
+            TableRow<PlayerRow> row = new TableRow<>();
+            row.setOnMouseClicked(event -> {
+                if (!row.isEmpty()) {
+                    PlayerRow clicked = row.getItem();
+                    if ("Vacant".equals(clicked.getPlayerName())) {
+                        confirmSeatSwitch(clicked.getSeat());
+                    }
+                }
+            });
+            return row;
+        });
 
         playerNameColumn.setCellFactory(col -> new TableCell<>() {
             @Override
@@ -133,6 +146,47 @@ public class RoomController {
     @FXML
     private void backToLobby() {
         AppNavigator.switchTo("lobby.fxml");
+    }
+
+    private void confirmSeatSwitch(String seat) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Switch Seat");
+        alert.setHeaderText(null);
+        alert.setContentText("Do you want to move to the " + seat + " seat?");
+
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            switchSeat(seat);
+        }
+    }
+
+    private void switchSeat(String seat) {
+        String roomId = AppState.getCurrentRoomId();
+        if (roomId == null) return;
+
+        new Thread(() -> {
+            try {
+                URL url = new URL("http://localhost:8080/room/" + roomId + "/seat?newSeat=" + seat);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Authorization", "Bearer " + AppState.getJwt());
+                conn.setDoOutput(true);
+
+                int responseCode = conn.getResponseCode();
+                if (responseCode == 200) {
+                    Platform.runLater(() -> {
+                        loadRoomInfo(); // refresh after switching
+                    });
+                } else if (responseCode == 401) {
+                    Platform.runLater(() -> showError("Unauthorized. Please log in again."));
+                } else {
+                    Platform.runLater(() -> showError("Failed to switch seat. (" + responseCode + ")"));
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+                Platform.runLater(() -> showError("Error switching seat."));
+            }
+        }).start();
     }
 
     @FXML
