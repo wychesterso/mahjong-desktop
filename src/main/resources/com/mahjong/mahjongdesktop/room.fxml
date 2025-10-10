@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.geometry.Insets?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.mahjong.mahjongdesktop.controllers.RoomController"
+      spacing="15"
+      alignment="TOP_CENTER"
+      style="-fx-padding: 20;">
+
+    <Label fx:id="roomTitleLabel"
+           text="Room #1234"
+           style="-fx-font-size: 26px; -fx-font-weight: bold;" />
+
+    <Label fx:id="hostLabel"
+           text="Host: Alice"
+           style="-fx-font-size: 16px;" />
+
+    <Label fx:id="seatsLabel"
+           text="Available seats: 3"
+           style="-fx-font-size: 14px;" />
+
+    <!-- player list -->
+    <TableView fx:id="playersTable"
+               VBox.vgrow="ALWAYS"
+               prefHeight="300"
+               prefWidth="450">
+        <columns>
+            <TableColumn fx:id="seatColumn"
+                         text="Seat"
+                         prefWidth="100" />
+            <TableColumn fx:id="playerNameColumn"
+                         text="Player"
+                         prefWidth="200" />
+            <TableColumn fx:id="botColumn"
+                         text="Type"
+                         prefWidth="150" />
+        </columns>
+    </TableView>
+
+    <!-- bottom buttons -->
+    <HBox spacing="10" alignment="CENTER">
+        <Button fx:id="refreshButton"
+                text="Refresh"
+                onAction="#refreshRoom" />
+
+        <Button fx:id="leaveButton"
+                text="Leave Room"
+                onAction="#leaveRoom" />
+    </HBox>
+
+</VBox>

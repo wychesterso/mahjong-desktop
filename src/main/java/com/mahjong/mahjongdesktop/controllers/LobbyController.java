@@ -245,10 +245,11 @@ public class LobbyController {
     }
 
     private void navigateToRoom(String roomId) {
-        System.out.println("Navigating to room page: " + roomId);
-//        javafx.application.Platform.runLater(() -> {
-//            AppNavigator.switchTo("room.fxml");
-//        });
+        // System.out.println("Navigating to room page: " + roomId);
+        Platform.runLater(() -> {
+            AppState.setCurrentRoomId(roomId);
+            AppNavigator.switchTo("room.fxml");
+        });
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
