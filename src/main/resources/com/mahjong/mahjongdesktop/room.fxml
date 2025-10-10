@@ -47,6 +47,10 @@
                 text="Refresh"
                 onAction="#refreshRoom" />
 
+        <Button fx:id="backButton"
+                text="Back to Lobby"
+                onAction="#backToLobby" />
+
         <Button fx:id="leaveButton"
                 text="Leave Room"
                 onAction="#leaveRoom" />

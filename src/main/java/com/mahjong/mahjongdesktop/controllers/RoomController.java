@@ -41,6 +41,24 @@ public class RoomController {
         botColumn.setCellValueFactory(new PropertyValueFactory<>("botStatus"));
         playersTable.setItems(players);
 
+        playerNameColumn.setCellFactory(col -> new TableCell<>() {
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                if (empty || item == null) {
+                    setText(null);
+                    setStyle("");
+                } else {
+                    setText(item);
+                    if (item.equals("Vacant")) {
+                        setStyle("-fx-text-fill: gray; -fx-font-style: italic;");
+                    } else {
+                        setStyle("");
+                    }
+                }
+            }
+        });
+
         loadRoomInfo();
     }
 
@@ -113,6 +131,11 @@ public class RoomController {
     }
 
     @FXML
+    private void backToLobby() {
+        AppNavigator.switchTo("lobby.fxml");
+    }
+
+    @FXML
     private void leaveRoom() {
         String roomId = AppState.getCurrentRoomId();
         if (roomId == null) return;
@@ -122,6 +145,7 @@ public class RoomController {
                 URL url = new URL("http://localhost:8080/room/" + roomId + "/exit");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("POST");
+                conn.setRequestProperty("Authorization", "Bearer " + AppState.getJwt());
                 conn.setDoOutput(true);
                 conn.getResponseCode(); // trigger request
             } catch (Exception e) {
