@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import javafx.scene.layout.HBox;
@@ -32,6 +31,7 @@ public class RoomController {
     @FXML private TableColumn<PlayerRow, Void> actionColumn;
     @FXML private Button refreshButton;
     @FXML private Button leaveButton;
+    @FXML private Button startGameButton;
 
     private final ObservableList<PlayerRow> players = FXCollections.observableArrayList();
     private final ObjectMapper mapper = new ObjectMapper();
@@ -75,6 +75,8 @@ public class RoomController {
                 }
             }
         });
+
+        startGameButton.managedProperty().bind(startGameButton.visibleProperty());
 
         loadRoomInfo();
     }
@@ -227,6 +229,10 @@ public class RoomController {
         }).start();
     }
 
+    @FXML
+    private void handleStartGame() {
+    }
+
     private void loadRoomInfo() {
         String roomId = AppState.getCurrentRoomId();
         if (roomId == null) {
@@ -290,6 +296,13 @@ public class RoomController {
                 players.add(new PlayerRow(seat, playerName, type));
             }
         }
+
+        // start game button if user is host AND if room is full
+        boolean isHost = Objects.equals(AppState.getUserId(), dto.getHostId());
+        boolean roomFull = dto.getPlayerNames().values().stream()
+                .filter(Objects::nonNull)
+                .count() == 4;
+        startGameButton.setVisible(isHost && roomFull);
     }
 
     @FXML

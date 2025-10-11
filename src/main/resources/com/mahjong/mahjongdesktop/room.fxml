@@ -50,6 +50,12 @@
                 text="Refresh"
                 onAction="#refreshRoom" />
 
+        <Button fx:id="startGameButton"
+                text="Start Game"
+                onAction="#handleStartGame"
+                visible="false"
+                style="-fx-background-color: #28a745; -fx-text-fill: white; -fx-font-weight: bold;" />
+
         <Button fx:id="backButton"
                 text="Back to Lobby"
                 onAction="#backToLobby" />
