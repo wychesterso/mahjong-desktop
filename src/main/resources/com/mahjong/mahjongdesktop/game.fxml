@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+
+<?import javafx.geometry.Insets?>
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.mahjong.mahjongdesktop.controllers.GameController"
+            prefWidth="1200" prefHeight="800"
+            style="-fx-background-color: #35654d;"> <!-- green felt -->
+
+    <!-- top player -->
+    <top>
+        <VBox alignment="CENTER" spacing="8">
+            <Label fx:id="northNameLabel" text="Top Player" style="-fx-text-fill: white; -fx-font-size: 16px;" />
+            <HBox fx:id="northMelds" alignment="CENTER" spacing="4" />
+            <HBox fx:id="northDiscards" alignment="CENTER" spacing="4" />
+            <HBox fx:id="northHand" alignment="CENTER" spacing="4" />
+        </VBox>
+    </top>
+
+    <!-- bottom player (you) -->
+    <bottom>
+        <VBox alignment="CENTER" spacing="12">
+            <Label fx:id="southNameLabel" text="You" style="-fx-text-fill: white; -fx-font-size: 16px;" />
+            <HBox fx:id="southMelds" alignment="CENTER" spacing="4" />
+            <HBox fx:id="southDiscards" alignment="CENTER" spacing="4" />
+            <HBox fx:id="southHand" alignment="CENTER" spacing="4" />
+
+            <!-- Player controls -->
+            <HBox alignment="CENTER" spacing="10">
+                <padding>
+                    <Insets/>
+                </padding>
+
+                <Button fx:id="drawButton" text="Draw" onAction="#handleDraw" />
+                <Button fx:id="discardButton" text="Discard" onAction="#handleDiscard" />
+                <Button fx:id="chiButton" text="Chi" onAction="#handleChi" visible="false" />
+                <Button fx:id="pongButton" text="Pong" onAction="#handlePong" visible="false" />
+                <Button fx:id="kongButton" text="Kong" onAction="#handleKong" visible="false" />
+                <Button fx:id="passButton" text="Pass" onAction="#handlePass" visible="false" />
+            </HBox>
+        </VBox>
+    </bottom>
+
+    <!-- Left player -->
+    <left>
+        <VBox alignment="CENTER" spacing="8" rotate="90">
+            <Label fx:id="westNameLabel" text="Left Player" style="-fx-text-fill: white; -fx-font-size: 16px;" />
+            <HBox fx:id="westMelds" alignment="CENTER" spacing="4" />
+            <HBox fx:id="westDiscards" alignment="CENTER" spacing="4" />
+            <HBox fx:id="westHand" alignment="CENTER" spacing="4" />
+        </VBox>
+    </left>
+
+    <!-- Right player -->
+    <right>
+        <VBox alignment="CENTER" spacing="8" rotate="-90">
+            <Label fx:id="eastNameLabel" text="Right Player" style="-fx-text-fill: white; -fx-font-size: 16px;" />
+            <HBox fx:id="eastMelds" alignment="CENTER" spacing="4" />
+            <HBox fx:id="eastDiscards" alignment="CENTER" spacing="4" />
+            <HBox fx:id="eastHand" alignment="CENTER" spacing="4" />
+        </VBox>
+    </right>
+
+    <!-- Center (table, tile, wall) -->
+    <center>
+        <StackPane fx:id="tableCenter" alignment="CENTER">
+            <Label text="Center Table" style="-fx-text-fill: white; -fx-font-size: 18px; -fx-opacity: 0.5;" />
+        </StackPane>
+    </center>
+</BorderPane>

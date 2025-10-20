@@ -231,6 +231,9 @@ public class RoomController {
 
     @FXML
     private void handleStartGame() {
+        Platform.runLater(() -> {
+            AppNavigator.switchTo("game.fxml");
+        });
     }
 
     private void loadRoomInfo() {
