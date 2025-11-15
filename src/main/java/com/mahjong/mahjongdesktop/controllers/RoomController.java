@@ -2,6 +2,8 @@ package com.mahjong.mahjongdesktop.controllers;
 
 import com.mahjong.mahjongdesktop.AppState;
 import com.mahjong.mahjongdesktop.AppNavigator;
+import com.mahjong.mahjongdesktop.network.GameMessageHandler;
+import com.mahjong.mahjongdesktop.network.GameSocketClient;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -35,6 +37,8 @@ public class RoomController {
 
     private final ObservableList<PlayerRow> players = FXCollections.observableArrayList();
     private final ObjectMapper mapper = new ObjectMapper();
+
+    private GameSocketClient gameSocketClient;
 
     @FXML
     public void initialize() {
@@ -229,6 +233,24 @@ public class RoomController {
         }).start();
     }
 
+    private void connectToGameSocket() {
+        String roomId = AppState.getCurrentRoomId();
+        String jwt = AppState.getJwt();
+        if (roomId == null || jwt == null) return;
+
+        GameMessageHandler handler = new GameMessageHandler();
+        AppState.setGameMessageHandler(handler);
+        AppState.getGameMessageHandler().addListener(msg -> {
+            String type = (String) msg.get("type");
+            if ("game_start".equals(type)) {
+                Platform.runLater(() -> AppNavigator.switchTo("game.fxml"));
+            }
+        });
+
+        AppState.setGameSocketClient(new GameSocketClient(jwt, roomId, handler));
+        AppState.getGameSocketClient().connect();
+    }
+
     @FXML
     private void handleStartGame() {
         Platform.runLater(() -> {
@@ -259,7 +281,13 @@ public class RoomController {
 
                 AppState.setCurrentHostId(dto.getHostId());
 
-                Platform.runLater(() -> updateUI(dto));
+                Platform.runLater(() -> {
+                    updateUI(dto);
+
+                    if (gameSocketClient == null) {
+                        connectToGameSocket();
+                    }
+                });
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -363,6 +391,10 @@ public class RoomController {
     private void leaveRoom() {
         String roomId = AppState.getCurrentRoomId();
         if (roomId == null) return;
+
+        AppState.getGameSocketClient().disconnect();
+        AppState.setGameSocketClient(null);
+        AppState.setGameMessageHandler(null);
 
         new Thread(() -> {
             try {

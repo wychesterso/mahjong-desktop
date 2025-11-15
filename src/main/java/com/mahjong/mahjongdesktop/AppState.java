@@ -1,6 +1,8 @@
 package com.mahjong.mahjongdesktop;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mahjong.mahjongdesktop.network.GameMessageHandler;
+import com.mahjong.mahjongdesktop.network.GameSocketClient;
 
 import java.util.Base64;
 import java.util.Map;
@@ -10,6 +12,9 @@ public class AppState {
     private static String userId;
     private static String currentRoomId;
     private static String currentHostId;
+
+    private static GameSocketClient gameSocketClient;
+    private static GameMessageHandler gameMessageHandler;
 
     public static String getJwt() {
         return jwt;
@@ -58,8 +63,25 @@ public class AppState {
         currentHostId = hostId;
     }
 
+    public static GameSocketClient getGameSocketClient() {
+        return gameSocketClient;
+    }
+
+    public static void setGameSocketClient(GameSocketClient gameSocketClient) {
+        AppState.gameSocketClient = gameSocketClient;
+    }
+
+    public static GameMessageHandler getGameMessageHandler() {
+        return gameMessageHandler;
+    }
+
+    public static void setGameMessageHandler(GameMessageHandler gameMessageHandler) {
+        AppState.gameMessageHandler = gameMessageHandler;
+    }
+
     public static void clear() {
         jwt = null;
         currentRoomId = null;
+        gameSocketClient = null;
     }
 }
