@@ -39,9 +39,9 @@ public class TileNode extends StackPane {
 
     private void initializeUI() {
         tileLabel = new Label(getFaceUpDisplay());
-        tileLabel.setStyle("-fx-font-size: 28px; -fx-text-alignment: center;");
+        tileLabel.setStyle("-fx-font-size: 20px; -fx-text-alignment: center; -fx-text-fill: black; -fx-background-color: #dddddd; -fx-padding: 1;");
 
-        this.setStyle("-fx-border-color: #cccccc; -fx-border-width: 1; -fx-padding: 4;");
+        this.setStyle("-fx-border-color: #4a6a5a; -fx-border-width: 1; -fx-padding: 0;");
         this.setPrefWidth(50);
         this.setPrefHeight(50);
         this.setMinWidth(50);
@@ -68,7 +68,7 @@ public class TileNode extends StackPane {
 
         this.setOnMouseEntered(e -> {
             if (clickable) {
-                this.setStyle("-fx-border-color: gold; -fx-border-width: 2; -fx-padding: 4; -fx-effect: dropshadow(three-pass-box, rgba(255,215,0,0.8), 6, 0, 0, 0);");
+                this.setStyle("-fx-border-color: gold; -fx-border-width: 2; -fx-padding: 0; -fx-effect: dropshadow(three-pass-box, rgba(255,215,0,0.8), 6, 0, 0, 0);");
                 this.setScaleX(1.08);
                 this.setScaleY(1.08);
             }
@@ -85,11 +85,11 @@ public class TileNode extends StackPane {
 
     private void updateStyle() {
         if (selected) {
-            this.setStyle("-fx-border-color: gold; -fx-border-width: 3; -fx-padding: 4; -fx-effect: dropshadow(three-pass-box, rgba(255,215,0,0.6), 8, 0, 0, 0);");
+            this.setStyle("-fx-border-color: gold; -fx-border-width: 3; -fx-padding: 0; -fx-effect: dropshadow(three-pass-box, rgba(255,215,0,0.6), 8, 0, 0, 0);");
         } else if (clickable) {
-            this.setStyle("-fx-border-color: #aaaaaa; -fx-border-width: 1; -fx-padding: 4;");
+            this.setStyle("-fx-border-color: #4a6a5a; -fx-border-width: 1; -fx-padding: 0;");
         } else {
-            this.setStyle("-fx-border-color: #cccccc; -fx-border-width: 1; -fx-padding: 4;");
+            this.setStyle("-fx-border-color: #4a6a5a; -fx-border-width: 1; -fx-padding: 0;");
         }
     }
 

@@ -1,6 +1,7 @@
 package com.mahjong.mahjongdesktop.controllers;
 
 import com.mahjong.mahjongdesktop.AppState;
+import com.mahjong.mahjongdesktop.domain.Tile;
 import com.mahjong.mahjongdesktop.dto.state.GameStateDTO;
 import com.mahjong.mahjongdesktop.dto.state.HandDTO;
 import com.mahjong.mahjongdesktop.network.GameMessageHandler;
@@ -9,95 +10,114 @@ import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Pane;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class GameController {
 
     // ============ root & board ============
     @FXML private GridPane root;
-    
-    // ============ player zones (abs pos) ============
+
+    // ============ player zones ============
     @FXML private Label northNameLabel, southNameLabel, eastNameLabel, westNameLabel;
     @FXML private Region northTurnIndicator, southTurnIndicator, eastTurnIndicator, westTurnIndicator;
-    
-    @FXML private HBox northMelds, northDiscards, northHand, northFlowers;
-    @FXML private HBox eastMelds, eastDiscards, eastFlowers;
-    @FXML private VBox eastHand;
-    @FXML private HBox westMelds, westDiscards, westFlowers;
-    @FXML private VBox westHand;
-    @FXML private HBox southMelds, southFlowers, southHand;
-    
+
+    @FXML private HBox northContainer, northMelds, northHand, northFlowers;
+    @FXML private HBox eastMelds, eastHand, eastFlowers;
+    @FXML private VBox eastContainer;
+    @FXML private HBox westMelds, westHand, westFlowers;
+    @FXML private VBox westContainer;
+    @FXML private HBox southContainer, southMelds, southFlowers, southHand;
+
     @FXML private GridPane discardPile;
 
     // ============ buttons ============
     @FXML private Button pongButton, sheungButton, kongButton, winButton, passButton;
 
+    // ============ state ============
     private GameMessageHandler handler;
     private TileNode selectedTile;
-    private String selfSeat; // your own seat
+    private String selfSeat; // the current player seat
+
     private final Map<String, Pane> handBoxes = new HashMap<>();
     private final Map<String, HBox> meldBoxes = new HashMap<>();
     private final Map<String, HBox> flowerBoxes = new HashMap<>();
     private final Map<String, Label> nameLabels = new HashMap<>();
     private final Map<String, Region> turnIndicators = new HashMap<>();
 
+    private final Map<String, String> seatToUI = new HashMap<>();
+
     @FXML
     public void initialize() {
+        // map seats to UI components (fixed)
+        mapSeatsToUI();
+        enforceFixedBoxSizes();
+        rotateSideHands();
+
         // subscribe to game state updates
         handler = AppState.getGameMessageHandler();
         if (handler != null) {
             handler.addListener(this::onGameState);
-            // load initial state if available
+
             GameStateDTO initial = handler.getLatestState();
-            if (initial != null) {
-                // capture self seat from initial state and rotate board
-                if (initial.getTable() != null) {
-                    selfSeat = initial.getTable().getSelfSeat();
-                    rotateBoardForSeat(selfSeat);
-                }
+            if (initial != null && initial.getTable() != null) {
+                selfSeat = initial.getTable().getSelfSeat();
+                mapServerSeatsToUI(selfSeat);
                 onGameState(initial);
             }
         } else {
             System.err.println("GameMessageHandler not present when GameController initialized.");
         }
 
-        // map seats to UI components
-        mapSeatsToUI();
-
         // wire button handlers
         pongButton.setOnAction(e -> handleClaim("PONG"));
         sheungButton.setOnAction(e -> handleClaim("SHEUNG"));
-        kongButton.setOnAction(e -> handleClaim("BRIGHT_KONG")); // TODO: differentiate kong types
+        kongButton.setOnAction(e -> handleClaim("BRIGHT_KONG"));
         winButton.setOnAction(e -> handleClaim("WIN"));
         passButton.setOnAction(e -> handleClaim("PASS"));
     }
 
-    /**
-     * Rotate the board so that selfSeat always faces down (bottom).
-     * Rotation is applied once at initialization, never changes during game.
-     */
-    private void rotateBoardForSeat(String seat) {
-        if (seat == null || root == null) return;
-        
-        int rotation = switch (seat) {
-            case "SOUTH" -> 0;    // self at bottom, no rotation
-            case "EAST" -> 270;   // self at right, rotate left 90° to put you at bottom
-            case "NORTH" -> 180;  // self at top, rotate 180°
-            case "WEST" -> 90;    // self at left, rotate right 90°
-            default -> 0;
-        };
-        
-        root.setRotate(rotation);
-        System.out.println("Board rotated " + rotation + "° for seat " + seat);
+    private void rotateSideHands() {
+        // EAST hand (right side) -> rotate counterclockwise 90°
+        eastContainer.setRotate(-90);
+//        eastHand.setTranslateY(eastHand.getWidth() / 2.0);
+        // NORTH hand (top side) -> rotate 180°
+        northContainer.setRotate(180);
+        // WEST hand (left side) -> rotate clockwise 90°
+        westContainer.setRotate(90);
+//        westHand.setTranslateY(-westHand.getWidth() / 2.0);
+    }
+
+    // ================= Seat Mapping (Rotation Removed) =================
+    private void mapServerSeatsToUI(String selfSeat) {
+        seatToUI.clear();
+        switch (selfSeat) {
+            case "SOUTH" -> { // self at bottom
+                seatToUI.put("SOUTH", "SOUTH");
+                seatToUI.put("WEST", "WEST");
+                seatToUI.put("NORTH", "NORTH");
+                seatToUI.put("EAST", "EAST");
+            }
+            case "EAST" -> {
+                seatToUI.put("EAST", "SOUTH");
+                seatToUI.put("SOUTH", "WEST");
+                seatToUI.put("WEST", "NORTH");
+                seatToUI.put("NORTH", "EAST");
+            }
+            case "NORTH" -> {
+                seatToUI.put("NORTH", "SOUTH");
+                seatToUI.put("EAST", "WEST");
+                seatToUI.put("SOUTH", "NORTH");
+                seatToUI.put("WEST", "EAST");
+            }
+            case "WEST" -> {
+                seatToUI.put("WEST", "SOUTH");
+                seatToUI.put("NORTH", "WEST");
+                seatToUI.put("EAST", "NORTH");
+                seatToUI.put("SOUTH", "EAST");
+            }
+        }
     }
 
     private void mapSeatsToUI() {
@@ -127,104 +147,177 @@ public class GameController {
         turnIndicators.put("WEST", westTurnIndicator);
     }
 
+    // ================== Enforce fixed sizes ==================
+    private void enforceFixedBoxSizes() {
+        // Hands
+        handBoxes.values().forEach(box -> {
+            box.setPrefSize(400, 70);
+            box.setMinSize(400, 70);
+            box.setMaxSize(400, 70);
+        });
+
+        // Melds
+        meldBoxes.values().forEach(box -> {
+            box.setPrefHeight(60);
+            box.setMinHeight(60);
+            box.setMaxHeight(60);
+        });
+
+        // Flowers
+        flowerBoxes.values().forEach(box -> {
+            box.setPrefHeight(50);
+            box.setMinHeight(50);
+            box.setMaxHeight(50);
+        });
+
+        // Discard pile
+        discardPile.setPrefSize(220, 170);
+        discardPile.setMinSize(220, 170);
+        discardPile.setMaxSize(220, 170);
+    }
+
+    // ================== Game State Updates ==================
     private void onGameState(GameStateDTO state) {
         if (state == null) return;
-        
-        // capture selfSeat from state updates if not already set
+
         if (selfSeat == null && state.getTable() != null && state.getTable().getSelfSeat() != null) {
             selfSeat = state.getTable().getSelfSeat();
-            rotateBoardForSeat(selfSeat);
+            mapServerSeatsToUI(selfSeat);
         }
 
         Platform.runLater(() -> {
-            // update player names
-            if (state.getPlayerNames() != null) {
-                for (String seat : new String[]{"NORTH", "SOUTH", "EAST", "WEST"}) {
-                    String name = state.getPlayerNames().get(seat);
-                    Label label = nameLabels.get(seat);
-                    if (label != null) {
-                        label.setText(name == null ? "(vacant)" : name);
-                    }
-                }
-            }
+            updatePlayerNames(state);
+            updateTurnIndicators(state.getCurrentTurn());
 
-            // highlight current turn
-            if (state.getCurrentTurn() != null) {
-                updateTurnIndicators(state.getCurrentTurn());
-            }
-
-            // update hands and melds
             if (state.getTable() != null && state.getTable().getHands() != null) {
                 updateAllHands(state);
                 updateMelds(state);
             }
 
-            // update center discard pile
             if (state.getTable() != null && state.getTable().getDiscardPile() != null) {
                 updateCenterDiscardPile(state.getTable().getDiscardPile());
             }
 
-            // update available decision buttons
             updateDecisionButtons(state.getAvailableDecisions());
-
-            System.out.println("Game State Updated: Turn=" + state.getCurrentTurn() + 
-                             ", Decisions=" + state.getAvailableDecisions());
         });
+    }
+
+    private void updatePlayerNames(GameStateDTO state) {
+        if (state.getPlayerNames() == null || selfSeat == null) return;
+
+        // Map UI position (fixed in FXML) -> server seat
+        Map<String, String> positionToServerSeat = Map.of(
+                "SOUTH", selfSeat,
+                "NORTH", oppositeSeat(selfSeat),
+                "EAST", rightSeat(selfSeat),
+                "WEST", leftSeat(selfSeat)
+        );
+
+        for (String position : List.of("SOUTH", "NORTH", "EAST", "WEST")) {
+            Label label = nameLabels.get(position);
+            String serverSeat = positionToServerSeat.get(position);
+            if (label != null) {
+                String name = state.getPlayerNames().get(serverSeat);
+                label.setText(name == null ? "(vacant)" : name);
+            }
+        }
+    }
+
+    private String oppositeSeat(String seat) {
+        return switch (seat) {
+            case "SOUTH" -> "NORTH";
+            case "NORTH" -> "SOUTH";
+            case "EAST" -> "WEST";
+            default -> "EAST";
+        };
+    }
+
+    private String leftSeat(String seat) {
+        return switch (seat) {
+            case "SOUTH" -> "EAST";
+            case "NORTH" -> "WEST";
+            case "EAST" -> "NORTH";
+            default -> "SOUTH";
+        };
+    }
+
+    private String rightSeat(String seat) {
+        return switch (seat) {
+            case "SOUTH" -> "WEST";
+            case "NORTH" -> "EAST";
+            case "EAST" -> "SOUTH";
+            default -> "NORTH";
+        };
     }
 
     private void updateAllHands(GameStateDTO state) {
         for (String seat : new String[]{"NORTH", "SOUTH", "EAST", "WEST"}) {
             HandDTO hand = state.getTable().getHands().get(seat);
-            Pane handBox = handBoxes.get(seat);
-            HBox flowerBox = flowerBoxes.get(seat);
-            boolean isPlayerHand = "SOUTH".equals(seat);
-            
+            String uiSeat = seatToUI.get(seat);
+
+            Pane handBox = handBoxes.get(uiSeat);
+            HBox flowerBox = flowerBoxes.get(uiSeat);
+            boolean isPlayerHand = "SOUTH".equals(uiSeat);
+
             handBox.getChildren().clear();
             flowerBox.getChildren().clear();
-            
-            // render flowers (separate box)
+
+            // flowers
             for (String flower : hand.getFlowers()) {
                 TileNode tile = new TileNode(flower);
                 tile.setClickable(false);
+                enforceTileFixedSize(tile);
                 flowerBox.getChildren().add(tile);
             }
-            
-            // render drawn tile first (for South) or sorted hand
+
+            // tiles
             List<String> displayTiles = new ArrayList<>(hand.getConcealedTiles());
             if (isPlayerHand && state.getDrawnTile() != null) {
-                displayTiles.add(0, state.getDrawnTile()); // drawn tile goes to the front
+                displayTiles.add(0, state.getDrawnTile());
             }
-            
-            for (String tileName : displayTiles) {
-                TileNode tile = new TileNode(tileName);
-                if (isPlayerHand) {
+
+            // sort tiles before rendering
+            if (isPlayerHand) {
+                displayTiles.sort(this::compareTileNames);
+
+                for (String tileName : displayTiles) {
+                    TileNode tile = new TileNode(tileName);
                     tile.setClickable(true);
-                    tile.setOnTileClicked(clicked -> onSouthHandTileClicked(clicked));
-                } else {
-                    tile.setFaceUp(false); // show back (🀫) for opponents
+                    tile.setOnTileClicked(this::onSouthHandTileClicked);
+
+                    enforceTileFixedSize(tile);
+                    handBox.getChildren().add(tile);
                 }
-                handBox.getChildren().add(tile);
+            } else {
+                for (int i = 0; i < hand.getConcealedTileCount(); i++) {
+                    TileNode backTile = new TileNode(null);
+                    backTile.setFaceUp(false);
+
+                    enforceTileFixedSize(backTile);
+                    handBox.getChildren().add(backTile);
+                }
             }
         }
+    }
+
+    private int compareTileNames(String t1, String t2) {
+        return Tile.valueOf(t1).compareTo(Tile.valueOf(t2));
+    }
+
+    private void enforceTileFixedSize(TileNode tile) {
+        tile.setPrefSize(25, 40);
+        tile.setMinSize(25, 40);
+        tile.setMaxSize(25, 40);
     }
 
     private void updateMelds(GameStateDTO state) {
         for (String seat : new String[]{"NORTH", "SOUTH", "EAST", "WEST"}) {
             HandDTO hand = state.getTable().getHands().get(seat);
-            HBox meldBox = meldBoxes.get(seat);
-
+            String uiSeat = seatToUI.get(seat);
+            HBox meldBox = meldBoxes.get(uiSeat);
             if (meldBox == null || hand == null) continue;
 
             meldBox.getChildren().clear();
-
-            // flowers (leftmost)
-            if (hand.getFlowers() != null && !hand.getFlowers().isEmpty()) {
-                for (String flower : hand.getFlowers()) {
-                    TileNode tile = new TileNode(flower);
-                    tile.setClickable(false);
-                    meldBox.getChildren().add(tile);
-                }
-            }
 
             // sheungs
             if (hand.getSheungs() != null) {
@@ -233,6 +326,7 @@ public class GameController {
                     for (String tile : sheung) {
                         TileNode t = new TileNode(tile);
                         t.setClickable(false);
+                        enforceTileFixedSize(t);
                         group.getChildren().add(t);
                     }
                     meldBox.getChildren().add(group);
@@ -246,53 +340,42 @@ public class GameController {
                     for (String tile : pong) {
                         TileNode t = new TileNode(tile);
                         t.setClickable(false);
+                        enforceTileFixedSize(t);
                         group.getChildren().add(t);
                     }
                     meldBox.getChildren().add(group);
                 }
             }
 
-            // bright kongs
+            // kongs
             if (hand.getBrightKongs() != null) {
                 for (List<String> kong : hand.getBrightKongs()) {
                     HBox group = new HBox(2);
                     for (String tile : kong) {
                         TileNode t = new TileNode(tile);
                         t.setClickable(false);
+                        enforceTileFixedSize(t);
                         group.getChildren().add(t);
                     }
                     meldBox.getChildren().add(group);
                 }
             }
 
-            // dark kongs (face down for other players)
-            if (hand.getDarkKongs() != null && "SOUTH".equals(seat)) {
-                for (List<String> kong : hand.getDarkKongs()) {
-                    HBox group = new HBox(2);
-                    for (String tile : kong) {
-                        TileNode t = new TileNode(tile);
-                        t.setFaceUp(false); // show back
-                        t.setClickable(false);
-                        group.getChildren().add(t);
-                    }
-                    meldBox.getChildren().add(group);
-                }
-            }
+            // TODO: dark kongs
         }
     }
 
     private void updateCenterDiscardPile(List<String> discards) {
         discardPile.getChildren().clear();
-        
-        if (discards == null || discards.isEmpty()) return;
+        if (discards == null) return;
 
-        // display in 4x3 grid (up to 13 tiles)
         int row = 0, col = 0;
         for (String tileName : discards) {
             TileNode tile = new TileNode(tileName);
             tile.setClickable(false);
+            enforceTileFixedSize(tile);
             discardPile.add(tile, col, row);
-            
+
             col++;
             if (col >= 4) {
                 col = 0;
@@ -301,13 +384,11 @@ public class GameController {
         }
     }
 
+    // ================== Turn & Decisions ==================
     private void updateTurnIndicators(String currentTurn) {
-        // reset all
         for (Region indicator : turnIndicators.values()) {
             indicator.setStyle("-fx-border-color: transparent; -fx-border-radius: 5; -fx-padding: 4;");
         }
-        
-        // highlight current
         Region current = turnIndicators.get(currentTurn);
         if (current != null) {
             current.setStyle("-fx-border-color: gold; -fx-border-radius: 5; -fx-padding: 4; -fx-border-width: 2;");
@@ -315,34 +396,22 @@ public class GameController {
     }
 
     private void updateDecisionButtons(List<String> decisions) {
-        if (decisions == null) {
-            pongButton.setVisible(false);
-            sheungButton.setVisible(false);
-            kongButton.setVisible(false);
-            winButton.setVisible(false);
-            passButton.setVisible(false);
-            return;
-        }
-
-        pongButton.setVisible(decisions.contains("PONG"));
-        sheungButton.setVisible(decisions.contains("SHEUNG"));
-        kongButton.setVisible(decisions.contains("BRIGHT_KONG") || decisions.contains("DARK_KONG"));
-        winButton.setVisible(decisions.contains("WIN"));
-        passButton.setVisible(decisions.contains("PASS"));
+        pongButton.setVisible(decisions != null && decisions.contains("PONG"));
+        sheungButton.setVisible(decisions != null && decisions.contains("SHEUNG"));
+        kongButton.setVisible(decisions != null && (decisions.contains("BRIGHT_KONG") || decisions.contains("DARK_KONG")));
+        winButton.setVisible(decisions != null && decisions.contains("WIN"));
+        passButton.setVisible(decisions != null && decisions.contains("PASS"));
     }
 
     private void onSouthHandTileClicked(TileNode clicked) {
         if (clicked.getLastClickCount() == 2) {
-            // double-click -> discard
-            String tileName = clicked.getTileName();
             if (AppState.getGameSocketClient() != null) {
-                AppState.getGameSocketClient().sendDiscardResponse(tileName);
+                AppState.getGameSocketClient().sendDiscardResponse(clicked.getTileName());
             }
             selectedTile = null;
             return;
         }
-        
-        // single-click -> toggle selection
+
         if (selectedTile != null && selectedTile != clicked) {
             selectedTile.clearSelection();
         }
@@ -351,15 +420,8 @@ public class GameController {
     }
 
     private void handleClaim(String decision) {
-        System.out.println("Claiming: " + decision);
-        
         if (AppState.getGameSocketClient() != null) {
-            if ("SHEUNG".equals(decision)) {
-                // TODO: show sheung combo selection dialog
-                AppState.getGameSocketClient().sendDrawDecision(decision);
-            } else {
-                AppState.getGameSocketClient().sendDrawDecision(decision);
-            }
+            AppState.getGameSocketClient().sendDrawDecision(decision);
         }
     }
 }

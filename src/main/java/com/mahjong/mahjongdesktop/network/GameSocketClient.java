@@ -4,7 +4,6 @@ import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
 import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
-import org.springframework.web.socket.WebSocketHttpHeaders;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
 
@@ -15,7 +14,7 @@ import com.mahjong.mahjongdesktop.dto.response.EndGameDecisionDTO;
 
 public class GameSocketClient {
 
-    private static final String WS_URL = "ws://localhost:8080/ws";
+    private static final String WS_URL = "ws://localhost:8080/ws?token=%s";
     private StompSession stompSession;
     private final GameMessageHandler handler;
     private final String jwt;
@@ -31,10 +30,9 @@ public class GameSocketClient {
         WebSocketStompClient client = new WebSocketStompClient(new StandardWebSocketClient());
         client.setMessageConverter(new MappingJackson2MessageConverter());
 
-        WebSocketHttpHeaders headers = new WebSocketHttpHeaders();
-        headers.add("Authorization", "Bearer " + jwt);
-
-        client.connect(WS_URL, headers, new StompSessionHandlerAdapter() {
+        // Pass JWT as query param, not header
+        String wsUrlWithToken = String.format(WS_URL, jwt);
+        client.connect(wsUrlWithToken, new StompSessionHandlerAdapter() {
             @Override
             public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
                 stompSession = session;

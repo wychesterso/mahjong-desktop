@@ -7,6 +7,9 @@ module com.mahjong.mahjongdesktop {
     requires spring.websocket;
 
     opens com.mahjong.mahjongdesktop.controllers to javafx.fxml, com.fasterxml.jackson.databind;
+    opens com.mahjong.mahjongdesktop.dto.state to com.fasterxml.jackson.databind;
+    opens com.mahjong.mahjongdesktop.dto.response to com.fasterxml.jackson.databind;
+    
     exports com.mahjong.mahjongdesktop;
     exports com.mahjong.mahjongdesktop.controllers;
 }

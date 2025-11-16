@@ -40,21 +40,35 @@ public class GameMessageHandler implements StompFrameHandler {
     }
 
     public void handleMessage(Object payload) {
+        System.out.println(payload.toString());
+
         try {
             GameStateDTO state = null;
 
-            if (payload instanceof GameStateDTO) {
-                state = (GameStateDTO) payload;
-            } else if (payload instanceof Map) {
-                // convert map -> GameStateDTO
-                state = mapper.convertValue(payload, GameStateDTO.class);
-            } else if (payload instanceof String) {
-                // try to parse JSON string
-                state = mapper.readValue((String) payload, GameStateDTO.class);
+            if (payload instanceof Map<?, ?> map) {
+                // expect { "type": "update", "data": GameStateDTO }
+                Object typeObj = map.get("type");
+                Object dataObj = map.get("data");
+
+                if ("update".equals(typeObj) && dataObj != null) {
+                    // extract GameStateDTO from data field
+                    state = mapper.convertValue(dataObj, GameStateDTO.class);
+                    System.out.println("Received wrapped game state update");
+                } else {
+                    // ignore non-update messages
+                    System.out.println("Ignoring non-update message from server: " + typeObj);
+                    return;
+                }
             }
+//            else if (payload instanceof String) {
+//                // try to parse JSON string
+//                state = mapper.readValue((String) payload, GameStateDTO.class);
+//            }
 
             if (state != null) {
                 latestState = state;
+                System.out.println("Game state updated: currentTurn=" + state.getCurrentTurn() + 
+                                 ", gameActive=" + state.isGameActive());
                 for (Consumer<GameStateDTO> listener : listeners) {
                     try {
                         listener.accept(state);
@@ -67,11 +81,12 @@ public class GameMessageHandler implements StompFrameHandler {
             }
         } catch (Exception e) {
             System.err.println("Failed to handle message: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
     @Override
     public Type getPayloadType(StompHeaders headers) {
-        return GameStateDTO.class;
+        return Map.class;
     }
 }

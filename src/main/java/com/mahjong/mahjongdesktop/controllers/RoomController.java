@@ -252,9 +252,35 @@ public class RoomController {
 
     @FXML
     private void handleStartGame() {
-        Platform.runLater(() -> {
-            AppNavigator.switchTo("game.fxml");
-        });
+        String roomId = AppState.getCurrentRoomId();
+        if (roomId == null) {
+            showError("No room selected.");
+            return;
+        }
+
+        new Thread(() -> {
+            try {
+                URL url = new URL("http://localhost:8080/room/" + roomId + "/start");
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("POST");
+                conn.setRequestProperty("Authorization", "Bearer " + AppState.getJwt());
+                conn.setDoOutput(true);
+
+                int responseCode = conn.getResponseCode();
+                if (responseCode == 200) {
+                    System.out.println("Game started successfully.");
+                    Platform.runLater(() -> {
+                        AppNavigator.switchTo("game.fxml");
+                    });
+                } else {
+                    Platform.runLater(() -> showError("Failed to start game. (" + responseCode + ")"));
+                }
+                conn.disconnect();
+            } catch (Exception e) {
+                e.printStackTrace();
+                Platform.runLater(() -> showError("Error starting game: " + e.getMessage()));
+            }
+        }).start();
     }
 
     private void loadRoomInfo() {
