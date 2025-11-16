@@ -46,6 +46,10 @@ dependencies {
     implementation 'com.fasterxml.jackson.core:jackson-annotations:2.17.1'
     implementation 'com.fasterxml.jackson.core:jackson-core:2.17.1'
 
+    // Jakarta WebSocket API for STOMP client
+    implementation 'jakarta.websocket:jakarta.websocket-client-api:2.1.1'
+    implementation 'org.glassfish.tyrus.bundles:tyrus-standalone-client:2.1.2'
+
     testImplementation("org.junit.jupiter:junit-jupiter-api:${junitVersion}")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:${junitVersion}")
 }

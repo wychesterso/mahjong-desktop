@@ -8,6 +8,11 @@ import org.springframework.web.socket.WebSocketHttpHeaders;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
 
+import com.mahjong.mahjongdesktop.dto.response.ClaimResponseDTO;
+import com.mahjong.mahjongdesktop.dto.response.DecisionResponseDTO;
+import com.mahjong.mahjongdesktop.dto.response.DiscardResponseDTO;
+import com.mahjong.mahjongdesktop.dto.response.EndGameDecisionDTO;
+
 public class GameSocketClient {
 
     private static final String WS_URL = "ws://localhost:8080/ws";
@@ -61,7 +66,43 @@ public class GameSocketClient {
         stompSession.subscribe("/user/queue/game", handler);
     }
 
-//    public void sendDiscardResponse(DiscardResponseDTO dto) {
-//        stompSession.send("/app/game/respondDiscard", dto);
-//    }
+    private boolean isConnected() {
+        return stompSession != null && stompSession.isConnected();
+    }
+
+    public void sendDiscardResponse(String tile) {
+        if (!isConnected()) {
+            System.err.println("Could not send discard response!");
+            return;
+        }
+        DiscardResponseDTO dto = new DiscardResponseDTO(roomId, tile);
+        stompSession.send("/app/game/respondDiscard", dto);
+    }
+
+    public void sendDrawDecision(String decision) {
+        if (!isConnected()) {
+            System.err.println("Could not send draw decision!");
+            return;
+        }
+        DecisionResponseDTO dto = new DecisionResponseDTO(roomId, decision);
+        stompSession.send("/app/game/respondDrawDecision", dto);
+    }
+
+    public void sendDiscardClaim(String decision, java.util.List<String> sheungCombo) {
+        if (!isConnected()) {
+            System.err.println("Could not send discard claim!");
+            return;
+        }
+        ClaimResponseDTO dto = new ClaimResponseDTO(roomId, decision, sheungCombo);
+        stompSession.send("/app/game/respondDiscardDecision", dto);
+    }
+
+    public void sendEndGameDecision(String decision) {
+        if (!isConnected()) {
+            System.err.println("Could not send end-game decision!");
+            return;
+        }
+        EndGameDecisionDTO dto = new EndGameDecisionDTO(roomId, decision);
+        stompSession.send("/app/game/endGameDecision", dto);
+    }
 }

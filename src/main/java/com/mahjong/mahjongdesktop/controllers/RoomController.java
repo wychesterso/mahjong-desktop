@@ -240,9 +240,8 @@ public class RoomController {
 
         GameMessageHandler handler = new GameMessageHandler();
         AppState.setGameMessageHandler(handler);
-        AppState.getGameMessageHandler().addListener(msg -> {
-            String type = (String) msg.get("type");
-            if ("game_start".equals(type)) {
+        AppState.getGameMessageHandler().addListener(state -> {
+            if (state != null && state.isGameActive()) {
                 Platform.runLater(() -> AppNavigator.switchTo("game.fxml"));
             }
         });
