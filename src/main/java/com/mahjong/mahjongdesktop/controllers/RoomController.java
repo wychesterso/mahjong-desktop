@@ -240,11 +240,6 @@ public class RoomController {
 
         GameMessageHandler handler = new GameMessageHandler();
         AppState.setGameMessageHandler(handler);
-        AppState.getGameMessageHandler().addListener(state -> {
-            if (state != null && state.isGameActive()) {
-                Platform.runLater(() -> AppNavigator.switchTo("game.fxml"));
-            }
-        });
 
         AppState.setGameSocketClient(new GameSocketClient(jwt, roomId, handler));
         AppState.getGameSocketClient().connect();

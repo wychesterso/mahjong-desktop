@@ -77,7 +77,7 @@
 
             <!-- name + turn indicator -->
             <HBox alignment="CENTER" spacing="12">
-                <Label fx:id="westNameLabel" text="North Player"
+                <Label fx:id="westNameLabel" text="West Player"
                        style="-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;" />
                 <Region fx:id="westTurnIndicator" prefWidth="0" prefHeight="0"
                         style="-fx-border-color: transparent; -fx-border-radius: 5; -fx-padding: 4;" />
@@ -91,7 +91,7 @@
             <Label text="Discard Pile" style="-fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold;" />
             <GridPane fx:id="discardPile" alignment="CENTER" hgap="4" vgap="4" 
                      style="-fx-border-color: #666; -fx-border-width: 2; -fx-padding: 10; -fx-background-color: rgba(0,0,0,0.3);"
-                     prefWidth="1000" prefHeight="300" minWidth="300" minHeight="300" maxWidth="300" maxHeight="300" />
+                     prefWidth="300" prefHeight="300" minWidth="300" minHeight="300" maxWidth="300" maxHeight="300" />
         </VBox>
     </center>
 
@@ -109,7 +109,7 @@
 
             <!-- name + turn indicator -->
             <HBox alignment="CENTER" spacing="12">
-                <Label fx:id="eastNameLabel" text="North Player"
+                <Label fx:id="eastNameLabel" text="East Player"
                        style="-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;" />
                 <Region fx:id="eastTurnIndicator" prefWidth="0" prefHeight="0"
                         style="-fx-border-color: transparent; -fx-border-radius: 5; -fx-padding: 4;" />

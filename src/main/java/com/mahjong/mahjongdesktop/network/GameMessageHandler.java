@@ -1,11 +1,15 @@
 package com.mahjong.mahjongdesktop.network;
 
 import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
+import com.mahjong.mahjongdesktop.dto.prompt.DecisionOnDiscardPromptDTO;
+import com.mahjong.mahjongdesktop.dto.prompt.DecisionOnDrawPromptDTO;
+import com.mahjong.mahjongdesktop.dto.prompt.DiscardAfterDrawPromptDTO;
+import com.mahjong.mahjongdesktop.dto.prompt.DiscardPromptDTO;
 import org.springframework.messaging.simp.stomp.StompFrameHandler;
 import org.springframework.messaging.simp.stomp.StompHeaders;
 
@@ -18,16 +22,33 @@ import com.mahjong.mahjongdesktop.dto.state.GameStateDTO;
  */
 public class GameMessageHandler implements StompFrameHandler {
 
-    private final List<Consumer<GameStateDTO>> listeners = new ArrayList<>();
+    private final List<Consumer<GameStateDTO>> stateListeners = new CopyOnWriteArrayList<>();
+    private final List<Consumer<DecisionOnDrawPromptDTO>> decisionOnDrawPromptListeners = new CopyOnWriteArrayList<>();
+    private final List<Consumer<DecisionOnDiscardPromptDTO>> decisionOnDiscardPromptListeners = new CopyOnWriteArrayList<>();
+    private final List<Consumer<DiscardPromptDTO>> discardPromptListeners = new CopyOnWriteArrayList<>();
+    private final List<Consumer<DiscardAfterDrawPromptDTO>> discardAfterDrawPromptListeners = new CopyOnWriteArrayList<>();
+
     private final ObjectMapper mapper = new ObjectMapper();
     private volatile GameStateDTO latestState;
 
-    public void addListener(Consumer<GameStateDTO> listener) {
-        listeners.add(listener);
+    public void addStateListener(Consumer<GameStateDTO> listener) {
+        stateListeners.add(listener);
+    }
+    public void addDecisionOnDrawPromptListener(Consumer<DecisionOnDrawPromptDTO> listener) {
+        decisionOnDrawPromptListeners.add(listener);
+    }
+    public void addDecisionOnDiscardPromptListener(Consumer<DecisionOnDiscardPromptDTO> listener) {
+        decisionOnDiscardPromptListeners.add(listener);
+    }
+    public void addDiscardPromptListener(Consumer<DiscardPromptDTO> listener) {
+        discardPromptListeners.add(listener);
+    }
+    public void addDiscardAfterDrawPromptListener(Consumer<DiscardAfterDrawPromptDTO> listener) {
+        discardAfterDrawPromptListeners.add(listener);
     }
 
-    public void removeListener(Consumer<GameStateDTO> listener) {
-        listeners.remove(listener);
+    public void removeStateListener(Consumer<GameStateDTO> listener) {
+        stateListeners.remove(listener);
     }
 
     public GameStateDTO getLatestState() {
@@ -42,46 +63,103 @@ public class GameMessageHandler implements StompFrameHandler {
     public void handleMessage(Object payload) {
         System.out.println(payload.toString());
 
+        if (!(payload instanceof Map<?, ?> map)) {
+            System.err.println("[GameMessageHandler] Invalid payload, expected Map");
+            return;
+        }
+
+        Object typeObj = map.get("type");
+        Object dataObj = map.get("data");
+
+        if (!(typeObj instanceof String type)) {
+            System.err.println("[GameMessageHandler] Missing or invalid 'type' field");
+            return;
+        }
+
         try {
-            GameStateDTO state = null;
+            switch (type) {
+                case "update" -> handleTypedMessage(
+                        dataObj,
+                        GameStateDTO.class,
+                        stateListeners,
+                        dto -> latestState = dto,
+                        "game state update"
+                );
 
-            if (payload instanceof Map<?, ?> map) {
-                // expect { "type": "update", "data": GameStateDTO }
-                Object typeObj = map.get("type");
-                Object dataObj = map.get("data");
+                case "prompt_draw_decision" -> handleTypedMessage(
+                        dataObj, DecisionOnDrawPromptDTO.class, decisionOnDrawPromptListeners,
+                        null, "prompt_draw_decision"
+                );
 
-                if ("update".equals(typeObj) && dataObj != null) {
-                    // extract GameStateDTO from data field
-                    state = mapper.convertValue(dataObj, GameStateDTO.class);
-                    System.out.println("Received wrapped game state update");
-                } else {
-                    // ignore non-update messages
-                    System.out.println("Ignoring non-update message from server: " + typeObj);
-                    return;
-                }
-            }
-//            else if (payload instanceof String) {
-//                // try to parse JSON string
-//                state = mapper.readValue((String) payload, GameStateDTO.class);
-//            }
+                case "prompt_discard_decision" -> handleTypedMessage(
+                        dataObj, DecisionOnDiscardPromptDTO.class, decisionOnDiscardPromptListeners,
+                        null, "prompt_discard_decision"
+                );
 
-            if (state != null) {
-                latestState = state;
-                System.out.println("Game state updated: currentTurn=" + state.getCurrentTurn() + 
-                                 ", gameActive=" + state.isGameActive());
-                for (Consumer<GameStateDTO> listener : listeners) {
-                    try {
-                        listener.accept(state);
-                    } catch (Exception e) {
-                        System.err.println("Listener error: " + e.getMessage());
-                    }
-                }
-            } else {
-                System.err.println("Received unknown payload type: " + (payload == null ? "null" : payload.getClass()));
+                case "prompt_discard" -> handleTypedMessage(
+                        dataObj, DiscardPromptDTO.class, discardPromptListeners,
+                        null, "prompt_discard"
+                );
+
+                case "prompt_discard_on_draw" -> handleTypedMessage(
+                        dataObj, DiscardAfterDrawPromptDTO.class, discardAfterDrawPromptListeners,
+                        null, "prompt_discard_on_draw"
+                );
+
+                // TODO: everything below here
+                case "prompt_end_game_decision" -> System.out.println(
+                        "[GameMessageHandler] Received end_game_decision: " + dataObj
+                );
+
+                case "log" -> System.out.println(
+                        "[GameMessageHandler] Log: " + dataObj
+                );
+
+                case "game_start" -> System.out.println(
+                        "[GameMessageHandler] Received game_start"
+                );
+
+                case "game_end" -> System.out.println(
+                        "[GameMessageHandler] Received game_end"
+                );
+
+                case "session_ended" -> System.out.println(
+                        "[GameMessageHandler] Received session_ended"
+                );
+
+                default -> System.out.println(
+                        "[GameMessageHandler] Ignored message: " + type
+                );
             }
         } catch (Exception e) {
-            System.err.println("Failed to handle message: " + e.getMessage());
+            System.err.println("[GameMessageHandler] Failed to handle message: " + e.getMessage());
             e.printStackTrace();
+        }
+    }
+
+    private <T> void handleTypedMessage(
+            Object dataObj,
+            Class<T> dtoClass,
+            List<Consumer<T>> listeners,
+            Consumer<T> preDispatch,
+            String label
+    ) {
+        T dto = mapper.convertValue(dataObj, dtoClass);
+        if (dto == null) {
+            System.err.println("[GameMessageHandler] Failed to parse " + label);
+            return;
+        }
+
+        System.out.println("[GameMessageHandler] Received " + label);
+
+        if (preDispatch != null) preDispatch.accept(dto);
+
+        for (Consumer<T> listener : listeners) {
+            try {
+                listener.accept(dto);
+            } catch (Exception e) {
+                System.err.println("[GameMessageHandler] Listener error (" + label + "): " + e.getMessage());
+            }
         }
     }
 

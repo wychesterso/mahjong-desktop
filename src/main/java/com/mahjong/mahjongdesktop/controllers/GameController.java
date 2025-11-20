@@ -2,6 +2,10 @@ package com.mahjong.mahjongdesktop.controllers;
 
 import com.mahjong.mahjongdesktop.AppState;
 import com.mahjong.mahjongdesktop.domain.Tile;
+import com.mahjong.mahjongdesktop.dto.prompt.DecisionOnDiscardPromptDTO;
+import com.mahjong.mahjongdesktop.dto.prompt.DecisionOnDrawPromptDTO;
+import com.mahjong.mahjongdesktop.dto.prompt.DiscardAfterDrawPromptDTO;
+import com.mahjong.mahjongdesktop.dto.prompt.DiscardPromptDTO;
 import com.mahjong.mahjongdesktop.dto.state.GameStateDTO;
 import com.mahjong.mahjongdesktop.dto.state.HandDTO;
 import com.mahjong.mahjongdesktop.network.GameMessageHandler;
@@ -15,9 +19,6 @@ import javafx.scene.layout.*;
 import java.util.*;
 
 public class GameController {
-
-    // ============ root & board ============
-    @FXML private GridPane root;
 
     // ============ player zones ============
     @FXML private Label northNameLabel, southNameLabel, eastNameLabel, westNameLabel;
@@ -39,6 +40,7 @@ public class GameController {
     private GameMessageHandler handler;
     private TileNode selectedTile;
     private String selfSeat; // the current player seat
+    private boolean allowDiscard = true;
 
     private final Map<String, Pane> handBoxes = new HashMap<>();
     private final Map<String, HBox> meldBoxes = new HashMap<>();
@@ -47,6 +49,8 @@ public class GameController {
     private final Map<String, Region> turnIndicators = new HashMap<>();
 
     private final Map<String, String> seatToUI = new HashMap<>();
+
+    private boolean registeredWithHandlers = false;
 
     @FXML
     public void initialize() {
@@ -57,8 +61,14 @@ public class GameController {
 
         // subscribe to game state updates
         handler = AppState.getGameMessageHandler();
-        if (handler != null) {
-            handler.addListener(this::onGameState);
+        if (handler != null && !registeredWithHandlers) {
+            registeredWithHandlers = true;
+
+            handler.addStateListener(this::onGameState);
+            handler.addDecisionOnDrawPromptListener(this::onDecisionOnDrawPrompt);
+            handler.addDecisionOnDiscardPromptListener(this::onDecisionOnDiscardPrompt);
+            handler.addDiscardPromptListener(this::onDiscardPrompt);
+            handler.addDiscardAfterDrawPromptListener(this::onDiscardAfterDrawPrompt);
 
             GameStateDTO initial = handler.getLatestState();
             if (initial != null && initial.getTable() != null) {
@@ -76,17 +86,30 @@ public class GameController {
         kongButton.setOnAction(e -> handleClaim("BRIGHT_KONG"));
         winButton.setOnAction(e -> handleClaim("WIN"));
         passButton.setOnAction(e -> handleClaim("PASS"));
+        updateDecisionButtons(List.of());
     }
 
     private void rotateSideHands() {
         // EAST hand (right side) -> rotate counterclockwise 90°
         eastContainer.setRotate(-90);
+//        eastContainer.setPrefSize(200, 400);
 //        eastHand.setTranslateY(eastHand.getWidth() / 2.0);
         // NORTH hand (top side) -> rotate 180°
         northContainer.setRotate(180);
         // WEST hand (left side) -> rotate clockwise 90°
         westContainer.setRotate(90);
 //        westHand.setTranslateY(-westHand.getWidth() / 2.0);
+        setContainerSizes();
+    }
+
+    private void setContainerSizes() {
+        eastContainer.setPrefSize(150, 450);
+        eastContainer.setMinSize(150, 450);
+        eastContainer.setMaxSize(150, 450);
+
+        westContainer.setPrefSize(150, 450);
+        westContainer.setMinSize(150, 450);
+        westContainer.setMaxSize(150, 450);
     }
 
     // ================= Seat Mapping (Rotation Removed) =================
@@ -171,9 +194,9 @@ public class GameController {
         });
 
         // Discard pile
-        discardPile.setPrefSize(220, 170);
-        discardPile.setMinSize(220, 170);
-        discardPile.setMaxSize(220, 170);
+        discardPile.setPrefSize(400, 400);
+        discardPile.setMinSize(400, 400);
+        discardPile.setMaxSize(400, 400);
     }
 
     // ================== Game State Updates ==================
@@ -197,57 +220,20 @@ public class GameController {
             if (state.getTable() != null && state.getTable().getDiscardPile() != null) {
                 updateCenterDiscardPile(state.getTable().getDiscardPile());
             }
-
-            updateDecisionButtons(state.getAvailableDecisions());
         });
     }
 
     private void updatePlayerNames(GameStateDTO state) {
-        if (state.getPlayerNames() == null || selfSeat == null) return;
-
-        // Map UI position (fixed in FXML) -> server seat
-        Map<String, String> positionToServerSeat = Map.of(
-                "SOUTH", selfSeat,
-                "NORTH", oppositeSeat(selfSeat),
-                "EAST", rightSeat(selfSeat),
-                "WEST", leftSeat(selfSeat)
-        );
+        if (state.getPlayerNames() == null) return;
 
         for (String position : List.of("SOUTH", "NORTH", "EAST", "WEST")) {
-            Label label = nameLabels.get(position);
-            String serverSeat = positionToServerSeat.get(position);
+            String uiSeat = seatToUI.get(position);
+            Label label = nameLabels.get(uiSeat);
             if (label != null) {
-                String name = state.getPlayerNames().get(serverSeat);
-                label.setText(name == null ? "(vacant)" : name);
+                String name = state.getPlayerNames().get(position);
+                label.setText(position + ": " + (name == null ? "(vacant)" : name));
             }
         }
-    }
-
-    private String oppositeSeat(String seat) {
-        return switch (seat) {
-            case "SOUTH" -> "NORTH";
-            case "NORTH" -> "SOUTH";
-            case "EAST" -> "WEST";
-            default -> "EAST";
-        };
-    }
-
-    private String leftSeat(String seat) {
-        return switch (seat) {
-            case "SOUTH" -> "EAST";
-            case "NORTH" -> "WEST";
-            case "EAST" -> "NORTH";
-            default -> "SOUTH";
-        };
-    }
-
-    private String rightSeat(String seat) {
-        return switch (seat) {
-            case "SOUTH" -> "WEST";
-            case "NORTH" -> "EAST";
-            case "EAST" -> "SOUTH";
-            default -> "NORTH";
-        };
     }
 
     private void updateAllHands(GameStateDTO state) {
@@ -384,29 +370,99 @@ public class GameController {
         }
     }
 
+    // ================== Prompts ==================
+
+    private void onDecisionOnDrawPrompt(DecisionOnDrawPromptDTO data) {
+        if (data == null) return;
+
+        Platform.runLater(() -> {
+            // TODO: Highlight drawn tile (data.getDrawnTile)
+            updateDecisionButtons(data.getAvailableOptions());
+        });
+    }
+
+    private void onDecisionOnDiscardPrompt(DecisionOnDiscardPromptDTO data) {
+        if (data == null) return;
+
+        Platform.runLater(() -> {
+            // TODO: Highlight discarded tile (data.getDiscardedTile) and put marker on discarder (data.getDiscarder)
+            // TODO: Figure out how to display sheung combo options (data.getSheungCombos) after clicking the sheung button
+            updateDecisionButtons(data.getAvailableOptions());
+        });
+    }
+
+    private void onDiscardPrompt(DiscardPromptDTO data) {
+        System.out.println("[GameController] onDiscardPrompt");
+        if (data == null) return;
+        System.out.println("[GameController] onDiscardPrompt run");
+
+        Platform.runLater(this::enableDiscard);
+    }
+
+    private void onDiscardAfterDrawPrompt(DiscardAfterDrawPromptDTO data) {
+        System.out.println("[GameController] onDiscardAfterDrawPrompt");
+        if (data == null) return;
+        System.out.println("[GameController] onDiscardAfterDrawPrompt run");
+
+        Platform.runLater(this::enableDiscard);
+    }
+
+    private void enableDiscard() {
+        allowDiscard = true;
+        southHand.setOpacity(1.0);
+    }
+
+    private void disableDiscard() {
+        allowDiscard = false;
+        southHand.setOpacity(0.7);
+        if (selectedTile != null) {
+            selectedTile.clearSelection();
+            selectedTile = null;
+        }
+    }
+
     // ================== Turn & Decisions ==================
     private void updateTurnIndicators(String currentTurn) {
         for (Region indicator : turnIndicators.values()) {
             indicator.setStyle("-fx-border-color: transparent; -fx-border-radius: 5; -fx-padding: 4;");
         }
-        Region current = turnIndicators.get(currentTurn);
+
+        String uiSeat = seatToUI.get(currentTurn);
+        if (uiSeat == null) return;
+
+        Region current = turnIndicators.get(uiSeat);
         if (current != null) {
             current.setStyle("-fx-border-color: gold; -fx-border-radius: 5; -fx-padding: 4; -fx-border-width: 2;");
         }
     }
 
     private void updateDecisionButtons(List<String> decisions) {
-        pongButton.setVisible(decisions != null && decisions.contains("PONG"));
-        sheungButton.setVisible(decisions != null && decisions.contains("SHEUNG"));
-        kongButton.setVisible(decisions != null && (decisions.contains("BRIGHT_KONG") || decisions.contains("DARK_KONG")));
-        winButton.setVisible(decisions != null && decisions.contains("WIN"));
-        passButton.setVisible(decisions != null && decisions.contains("PASS"));
+        System.out.println("[GameController] Decisions=" + decisions);
+
+        if (decisions != null) {
+            setButtonState(pongButton, decisions.contains("PONG"));
+            setButtonState(sheungButton, decisions.contains("SHEUNG"));
+            setButtonState(kongButton, decisions.contains("BRIGHT_KONG") || decisions.contains("DARK_KONG"));
+            setButtonState(winButton, decisions.contains("WIN"));
+            setButtonState(passButton, !decisions.isEmpty());
+        }
+    }
+
+    private void setButtonState(Button btn, boolean enabled) {
+        btn.setVisible(enabled);
+        btn.setManaged(enabled);
     }
 
     private void onSouthHandTileClicked(TileNode clicked) {
+        if (!allowDiscard) {
+            System.out.println("[GameController] allowDiscard is false");
+            return;
+        }
+
         if (clicked.getLastClickCount() == 2) {
             if (AppState.getGameSocketClient() != null) {
                 AppState.getGameSocketClient().sendDiscardResponse(clicked.getTileName());
+                disableDiscard();
             }
             selectedTile = null;
             return;
@@ -423,5 +479,10 @@ public class GameController {
         if (AppState.getGameSocketClient() != null) {
             AppState.getGameSocketClient().sendDrawDecision(decision);
         }
+
+        Platform.runLater(() -> {
+            // hide all buttons
+            updateDecisionButtons(List.of());
+        });
     }
 }

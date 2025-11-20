@@ -8,6 +8,7 @@ module com.mahjong.mahjongdesktop {
 
     opens com.mahjong.mahjongdesktop.controllers to javafx.fxml, com.fasterxml.jackson.databind;
     opens com.mahjong.mahjongdesktop.dto.state to com.fasterxml.jackson.databind;
+    opens com.mahjong.mahjongdesktop.dto.prompt to com.fasterxml.jackson.databind;
     opens com.mahjong.mahjongdesktop.dto.response to com.fasterxml.jackson.databind;
     
     exports com.mahjong.mahjongdesktop;
