@@ -27,6 +27,7 @@ public class GameMessageHandler implements StompFrameHandler {
     private final List<Consumer<DecisionOnDiscardPromptDTO>> decisionOnDiscardPromptListeners = new CopyOnWriteArrayList<>();
     private final List<Consumer<DiscardPromptDTO>> discardPromptListeners = new CopyOnWriteArrayList<>();
     private final List<Consumer<DiscardAfterDrawPromptDTO>> discardAfterDrawPromptListeners = new CopyOnWriteArrayList<>();
+    private final List<Consumer<Void>> endGameDecisionPromptListeners = new CopyOnWriteArrayList<>();
 
     private final ObjectMapper mapper = new ObjectMapper();
     private volatile GameStateDTO latestState;
@@ -45,6 +46,9 @@ public class GameMessageHandler implements StompFrameHandler {
     }
     public void addDiscardAfterDrawPromptListener(Consumer<DiscardAfterDrawPromptDTO> listener) {
         discardAfterDrawPromptListeners.add(listener);
+    }
+    public void addEndGameDecisionPromptListener(Consumer<Void> listener) {
+        endGameDecisionPromptListeners.add(listener);
     }
 
     public void removeStateListener(Consumer<GameStateDTO> listener) {
@@ -106,11 +110,17 @@ public class GameMessageHandler implements StompFrameHandler {
                         null, "prompt_discard_on_draw"
                 );
 
-                // TODO: everything below here
-                case "prompt_end_game_decision" -> System.out.println(
-                        "[GameMessageHandler] Received end_game_decision: " + dataObj
-                );
+                case "prompt_end_game_decision" -> {
+                    for (Consumer<Void> listener : endGameDecisionPromptListeners) {
+                        try {
+                            listener.accept(null);
+                        } catch (Exception e) {
+                            System.err.println("[GameMessageHandler] Listener error (" + "prompt_end_game_decision" + "): " + e.getMessage());
+                        }
+                    }
+                }
 
+                // TODO: everything below here
                 case "log" -> System.out.println(
                         "[GameMessageHandler] Log: " + dataObj
                 );

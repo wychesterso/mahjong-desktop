@@ -22,9 +22,9 @@
             <!-- flowers, melds, unrevealed hand -->
             <HBox fx:id="northContainer" spacing="8" alignment="CENTER" style="-fx-border-color: #4a8a5a; -fx-border-width: 1; -fx-padding: 8;">
                 <HBox fx:id="northFlowers" spacing="2" alignment="CENTER" style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;" />
-                <Separator orientation="VERTICAL" prefHeight="50" />
+                <Region prefWidth="12" />
                 <HBox fx:id="northMelds" spacing="4" alignment="CENTER" style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;" />
-                <Separator orientation="VERTICAL" prefHeight="50" />
+                <Region prefWidth="12" />
                 <HBox fx:id="northHand" spacing="1" alignment="CENTER_LEFT" />
             </HBox>
         </VBox>
@@ -33,13 +33,15 @@
     <!-- BOTTOM: SOUTH PLAYER (YOU) -->
     <bottom>
         <VBox spacing="8" style="-fx-padding: 12; -fx-alignment: CENTER;">
-            <!-- flowers, melds, unrevealed hand -->
+            <!-- flowers, melds, unrevealed hand, drawn tile -->
             <HBox fx:id="southContainer" spacing="8" alignment="CENTER" style="-fx-border-color: #4a8a5a; -fx-border-width: 1; -fx-padding: 8;">
                 <HBox fx:id="southFlowers" spacing="2" alignment="CENTER" style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;" />
-                <Separator orientation="VERTICAL" prefHeight="50" />
+                <Region prefWidth="12" />
                 <HBox fx:id="southMelds" spacing="4" alignment="CENTER" style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;" />
-                <Separator orientation="VERTICAL" prefHeight="50" />
+                <Region prefWidth="12" />
                 <HBox fx:id="southHand" spacing="1" alignment="CENTER_LEFT" />
+                <Region prefWidth="12" />
+                <HBox fx:id="southDrawnTile" spacing="1" alignment="CENTER_LEFT" />
             </HBox>
 
             <!-- name + turn indicator -->
@@ -51,14 +53,33 @@
             </HBox>
 
             <!-- action buttons -->
-            <HBox alignment="CENTER" spacing="12" style="-fx-padding: 8;">
+            <HBox fx:id="actionButtonBox" alignment="CENTER" spacing="12" style="-fx-padding: 8;">
                 <Label text="Double-click a tile to discard" style="-fx-text-fill: #aaaaaa; -fx-font-size: 11px;" />
-                <Separator orientation="VERTICAL" />
+                <Region prefWidth="12" />
+
+                <!-- decision buttons -->
                 <Button fx:id="pongButton" text="Pong" style="-fx-padding: 6; -fx-font-size: 11px;" visible="false" managed="false" />
                 <Button fx:id="sheungButton" text="Sheung" style="-fx-padding: 6; -fx-font-size: 11px;" visible="false" managed="false" />
                 <Button fx:id="kongButton" text="Kong" style="-fx-padding: 6; -fx-font-size: 11px;" visible="false" managed="false" />
                 <Button fx:id="winButton" text="Win" style="-fx-padding: 6; -fx-font-size: 11px;" visible="false" managed="false" />
                 <Button fx:id="passButton" text="Pass" style="-fx-padding: 6; -fx-font-size: 11px;" visible="false" managed="false" />
+
+                <!-- sheung selector -->
+                <HBox fx:id="sheungSelector" alignment="CENTER" spacing="12" style="-fx-padding: 8;" visible="false" managed="false">
+                    <Label text="Select a Sheung:" style="-fx-text-fill: #ffffcc; -fx-font-size: 12;" />
+                    <HBox fx:id="sheungOptions" alignment="CENTER" spacing="6" />
+                    <Button fx:id="cancelSheungBtn" text="Cancel" style="-fx-padding: 6; -fx-font-size: 11px;" />
+                </HBox>
+
+                <!-- decision buttons and sheung selector shouldn't coexist! -->
+            </HBox>
+
+            <!-- end game decision box -->
+            <HBox fx:id="endGameDecisionBox" alignment="CENTER" spacing="12" style="-fx-padding: 8;" visible="false" managed="false">
+                <Label text="Game Over!" style="-fx-text-fill: #ffffcc; -fx-font-size: 14px;"/>
+
+                <Button fx:id="nextGameButton" text="Next Game" style="-fx-padding: 6;"/>
+                <Button fx:id="exitButton" text="Exit Room" style="-fx-padding: 6;"/>
             </HBox>
         </VBox>
     </bottom>
@@ -69,10 +90,10 @@
             <!-- flowers, melds, unrevealed hand -->
             <HBox spacing="8" alignment="CENTER" style="-fx-border-color: #4a8a5a; -fx-border-width: 1; -fx-padding: 8;">
                 <HBox fx:id="westFlowers" spacing="2" alignment="CENTER" style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;" />
-                <Separator orientation="VERTICAL" prefHeight="50" />
+                <Region prefWidth="12" />
                 <HBox fx:id="westMelds" spacing="4" alignment="CENTER" style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;" />
-                <Separator orientation="VERTICAL" prefHeight="50" />
-                <HBox fx:id="westHand" spacing="1" alignment="CENTER_LEFT" style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;" />
+                <Region prefWidth="12" />
+                <HBox fx:id="westHand" spacing="1" alignment="CENTER" style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;" />
             </HBox>
 
             <!-- name + turn indicator -->
@@ -88,10 +109,10 @@
     <!-- CENTER: DISCARD PILE (fixed 300x300 square) -->
     <center>
         <VBox alignment="CENTER" spacing="8">
-            <Label text="Discard Pile" style="-fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold;" />
+<!--            <Label text="Discard Pile" style="-fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold;" />-->
             <GridPane fx:id="discardPile" alignment="CENTER" hgap="4" vgap="4" 
                      style="-fx-border-color: #666; -fx-border-width: 2; -fx-padding: 10; -fx-background-color: rgba(0,0,0,0.3);"
-                     prefWidth="300" prefHeight="300" minWidth="300" minHeight="300" maxWidth="300" maxHeight="300" />
+                     prefWidth="500" prefHeight="400" minWidth="500" minHeight="400" maxWidth="500" maxHeight="400" />
         </VBox>
     </center>
 
@@ -101,10 +122,10 @@
             <!-- flowers, melds, unrevealed hand -->
             <HBox spacing="8" alignment="CENTER" style="-fx-border-color: #4a8a5a; -fx-border-width: 1; -fx-padding: 8;">
                 <HBox fx:id="eastFlowers" spacing="2" alignment="CENTER" style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;" />
-                <Separator orientation="VERTICAL" prefHeight="50" />
+                <Region prefWidth="12" />
                 <HBox fx:id="eastMelds" spacing="4" alignment="CENTER" style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;" />
-                <Separator orientation="VERTICAL" prefHeight="50" />
-                <HBox fx:id="eastHand" spacing="1" alignment="CENTER_LEFT" style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;" />
+                <Region prefWidth="12" />
+                <HBox fx:id="eastHand" spacing="1" alignment="CENTER" style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;" />
             </HBox>
 
             <!-- name + turn indicator -->

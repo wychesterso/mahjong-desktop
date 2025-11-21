@@ -1,5 +1,6 @@
 package com.mahjong.mahjongdesktop.controllers;
 
+import com.mahjong.mahjongdesktop.AppNavigator;
 import com.mahjong.mahjongdesktop.AppState;
 import com.mahjong.mahjongdesktop.domain.Tile;
 import com.mahjong.mahjongdesktop.dto.prompt.DecisionOnDiscardPromptDTO;
@@ -12,6 +13,7 @@ import com.mahjong.mahjongdesktop.network.GameMessageHandler;
 import com.mahjong.mahjongdesktop.ui.TileNode;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.layout.*;
@@ -29,18 +31,31 @@ public class GameController {
     @FXML private VBox eastContainer;
     @FXML private HBox westMelds, westHand, westFlowers;
     @FXML private VBox westContainer;
-    @FXML private HBox southContainer, southMelds, southFlowers, southHand;
+    @FXML private HBox southContainer, southMelds, southFlowers, southHand, southDrawnTile;
 
     @FXML private GridPane discardPile;
 
     // ============ buttons ============
+    @FXML private HBox actionButtonBox;
     @FXML private Button pongButton, sheungButton, kongButton, winButton, passButton;
+
+    @FXML private HBox sheungSelector;
+    @FXML private HBox sheungOptions;
+    @FXML private Button cancelSheungBtn;
+
+    @FXML private HBox endGameDecisionBox;
+    @FXML private Button nextGameButton, exitButton;
 
     // ============ state ============
     private GameMessageHandler handler;
     private TileNode selectedTile;
     private String selfSeat; // the current player seat
+
     private boolean allowDiscard = true;
+    private boolean decisionDraw = false; // true if prompted for decisionOnDraw, false if prompted for decisionOnDiscard
+    private List<String> availableDecisions = List.of();
+    private List<List<String>> sheungCombos = List.of();
+    private String lastDiscardedTile = "";
 
     private final Map<String, Pane> handBoxes = new HashMap<>();
     private final Map<String, HBox> meldBoxes = new HashMap<>();
@@ -69,6 +84,7 @@ public class GameController {
             handler.addDecisionOnDiscardPromptListener(this::onDecisionOnDiscardPrompt);
             handler.addDiscardPromptListener(this::onDiscardPrompt);
             handler.addDiscardAfterDrawPromptListener(this::onDiscardAfterDrawPrompt);
+            handler.addEndGameDecisionPromptListener(v -> onEndGameDecisionPrompt());
 
             GameStateDTO initial = handler.getLatestState();
             if (initial != null && initial.getTable() != null) {
@@ -87,6 +103,11 @@ public class GameController {
         winButton.setOnAction(e -> handleClaim("WIN"));
         passButton.setOnAction(e -> handleClaim("PASS"));
         updateDecisionButtons(List.of());
+
+        nextGameButton.setOnAction(e -> sendEndGameDecision("NEXT_GAME"));
+        exitButton.setOnAction(e -> sendEndGameDecision("EXIT"));
+
+        cancelSheungBtn.setOnAction(e -> hideSheungSelector(true));
     }
 
     private void rotateSideHands() {
@@ -112,33 +133,34 @@ public class GameController {
         westContainer.setMaxSize(150, 450);
     }
 
-    // ================= Seat Mapping (Rotation Removed) =================
+    // ================= SEAT MAPPING =================
+
     private void mapServerSeatsToUI(String selfSeat) {
         seatToUI.clear();
         switch (selfSeat) {
             case "SOUTH" -> { // self at bottom
                 seatToUI.put("SOUTH", "SOUTH");
-                seatToUI.put("WEST", "WEST");
+                seatToUI.put("WEST", "EAST");
                 seatToUI.put("NORTH", "NORTH");
-                seatToUI.put("EAST", "EAST");
+                seatToUI.put("EAST", "WEST");
             }
             case "EAST" -> {
                 seatToUI.put("EAST", "SOUTH");
-                seatToUI.put("SOUTH", "WEST");
+                seatToUI.put("SOUTH", "EAST");
                 seatToUI.put("WEST", "NORTH");
-                seatToUI.put("NORTH", "EAST");
+                seatToUI.put("NORTH", "WEST");
             }
             case "NORTH" -> {
                 seatToUI.put("NORTH", "SOUTH");
-                seatToUI.put("EAST", "WEST");
+                seatToUI.put("EAST", "EAST");
                 seatToUI.put("SOUTH", "NORTH");
-                seatToUI.put("WEST", "EAST");
+                seatToUI.put("WEST", "WEST");
             }
             case "WEST" -> {
                 seatToUI.put("WEST", "SOUTH");
-                seatToUI.put("NORTH", "WEST");
+                seatToUI.put("NORTH", "EAST");
                 seatToUI.put("EAST", "NORTH");
-                seatToUI.put("SOUTH", "EAST");
+                seatToUI.put("SOUTH", "WEST");
             }
         }
     }
@@ -170,14 +192,15 @@ public class GameController {
         turnIndicators.put("WEST", westTurnIndicator);
     }
 
-    // ================== Enforce fixed sizes ==================
+    // ================== ENFORCE FIXED SIZES ==================
+
     private void enforceFixedBoxSizes() {
         // Hands
-        handBoxes.values().forEach(box -> {
-            box.setPrefSize(400, 70);
-            box.setMinSize(400, 70);
-            box.setMaxSize(400, 70);
-        });
+//        handBoxes.values().forEach(box -> {
+//            box.setPrefSize(400, 70);
+//            box.setMinSize(400, 70);
+//            box.setMaxSize(400, 70);
+//        });
 
         // Melds
         meldBoxes.values().forEach(box -> {
@@ -194,12 +217,13 @@ public class GameController {
         });
 
         // Discard pile
-        discardPile.setPrefSize(400, 400);
-        discardPile.setMinSize(400, 400);
-        discardPile.setMaxSize(400, 400);
+        discardPile.setPrefSize(550, 400);
+        discardPile.setMinSize(550, 400);
+        discardPile.setMaxSize(550, 400);
     }
 
-    // ================== Game State Updates ==================
+    // ================== GAME STATE UPDATES ==================
+
     private void onGameState(GameStateDTO state) {
         if (state == null) return;
 
@@ -211,6 +235,7 @@ public class GameController {
         Platform.runLater(() -> {
             updatePlayerNames(state);
             updateTurnIndicators(state.getCurrentTurn());
+            updateDecisionBox(true);
 
             if (state.getTable() != null && state.getTable().getHands() != null) {
                 updateAllHands(state);
@@ -219,7 +244,10 @@ public class GameController {
 
             if (state.getTable() != null && state.getTable().getDiscardPile() != null) {
                 updateCenterDiscardPile(state.getTable().getDiscardPile());
+                updateCenterDiscardPile(state.getTable().getDiscardPile());
             }
+
+            hideSheungSelector(false); // this line is sus
         });
     }
 
@@ -258,12 +286,24 @@ public class GameController {
 
             // tiles
             List<String> displayTiles = new ArrayList<>(hand.getConcealedTiles());
-            if (isPlayerHand && state.getDrawnTile() != null) {
-                displayTiles.add(0, state.getDrawnTile());
-            }
 
             // sort tiles before rendering
             if (isPlayerHand) {
+                // generate the newly-drawn tile separately
+                southDrawnTile.getChildren().clear();
+
+                if (state.getDrawnTile() != null && displayTiles.getLast().equals(state.getDrawnTile())) {
+                    displayTiles.removeLast();
+
+                    TileNode tile = new TileNode(state.getDrawnTile());
+                    tile.setClickable(true);
+                    tile.setOnTileClicked(this::onSouthHandTileClicked);
+
+                    enforceTileFixedSize(tile);
+                    southDrawnTile.getChildren().add(tile);
+                }
+
+                // generate other concealed tiles
                 displayTiles.sort(this::compareTileNames);
 
                 for (String tileName : displayTiles) {
@@ -291,9 +331,9 @@ public class GameController {
     }
 
     private void enforceTileFixedSize(TileNode tile) {
-        tile.setPrefSize(25, 40);
-        tile.setMinSize(25, 40);
-        tile.setMaxSize(25, 40);
+        tile.setPrefSize(30, 40);
+        tile.setMinSize(30, 40);
+        tile.setMaxSize(30, 40);
     }
 
     private void updateMelds(GameStateDTO state) {
@@ -308,47 +348,47 @@ public class GameController {
             // sheungs
             if (hand.getSheungs() != null) {
                 for (List<String> sheung : hand.getSheungs()) {
-                    HBox group = new HBox(2);
-                    for (String tile : sheung) {
-                        TileNode t = new TileNode(tile);
-                        t.setClickable(false);
-                        enforceTileFixedSize(t);
-                        group.getChildren().add(t);
-                    }
-                    meldBox.getChildren().add(group);
+                    addMeld(sheung, meldBox);
                 }
             }
 
             // pongs
             if (hand.getPongs() != null) {
                 for (List<String> pong : hand.getPongs()) {
-                    HBox group = new HBox(2);
-                    for (String tile : pong) {
-                        TileNode t = new TileNode(tile);
-                        t.setClickable(false);
-                        enforceTileFixedSize(t);
-                        group.getChildren().add(t);
-                    }
-                    meldBox.getChildren().add(group);
+                    addMeld(pong, meldBox);
                 }
             }
 
             // kongs
             if (hand.getBrightKongs() != null) {
                 for (List<String> kong : hand.getBrightKongs()) {
-                    HBox group = new HBox(2);
-                    for (String tile : kong) {
-                        TileNode t = new TileNode(tile);
-                        t.setClickable(false);
-                        enforceTileFixedSize(t);
-                        group.getChildren().add(t);
-                    }
-                    meldBox.getChildren().add(group);
+                    addMeld(kong, meldBox);
                 }
             }
 
-            // TODO: dark kongs
+            if (hand.getDarkKongs() != null) {
+                for (List<String> kong : hand.getDarkKongs()) {
+                    addMeld(kong, meldBox);
+                }
+            }
         }
+    }
+
+    private void addMeld(List<String> group, HBox meldBox) {
+        HBox box = new HBox(2);
+        for (String tile : group) {
+            TileNode t = new TileNode(tile);
+            t.setClickable(false);
+            enforceTileFixedSize(t);
+            box.getChildren().add(t);
+        }
+
+        meldBox.getChildren().add(box);
+
+        // add spacer after each meld
+        Region spacer = new Region();
+        spacer.setPrefWidth(16);
+        meldBox.getChildren().add(spacer);
     }
 
     private void updateCenterDiscardPile(List<String> discards) {
@@ -363,30 +403,34 @@ public class GameController {
             discardPile.add(tile, col, row);
 
             col++;
-            if (col >= 4) {
+            if (col >= 11) {
                 col = 0;
                 row++;
             }
         }
     }
 
-    // ================== Prompts ==================
+    // ================== PROMPTS ==================
 
     private void onDecisionOnDrawPrompt(DecisionOnDrawPromptDTO data) {
         if (data == null) return;
+        decisionDraw = true;
+        availableDecisions = data.getAvailableOptions();
 
         Platform.runLater(() -> {
-            // TODO: Highlight drawn tile (data.getDrawnTile)
             updateDecisionButtons(data.getAvailableOptions());
         });
     }
 
     private void onDecisionOnDiscardPrompt(DecisionOnDiscardPromptDTO data) {
         if (data == null) return;
+        decisionDraw = false;
+        availableDecisions = data.getAvailableOptions();
+        lastDiscardedTile = data.getDiscardedTile();
+        sheungCombos = data.getSheungCombos();
 
         Platform.runLater(() -> {
-            // TODO: Highlight discarded tile (data.getDiscardedTile) and put marker on discarder (data.getDiscarder)
-            // TODO: Figure out how to display sheung combo options (data.getSheungCombos) after clicking the sheung button
+            // TODO: Maybe highlight discarded tile (data.getDiscardedTile) and put some marker on discarder (data.getDiscarder)
             updateDecisionButtons(data.getAvailableOptions());
         });
     }
@@ -421,7 +465,8 @@ public class GameController {
         }
     }
 
-    // ================== Turn & Decisions ==================
+    // ================== TURNS & DECISIONS ==================
+
     private void updateTurnIndicators(String currentTurn) {
         for (Region indicator : turnIndicators.values()) {
             indicator.setStyle("-fx-border-color: transparent; -fx-border-radius: 5; -fx-padding: 4;");
@@ -477,12 +522,102 @@ public class GameController {
 
     private void handleClaim(String decision) {
         if (AppState.getGameSocketClient() != null) {
-            AppState.getGameSocketClient().sendDrawDecision(decision);
+            if (decisionDraw) {
+                AppState.getGameSocketClient().sendDrawDecision(decision);
+            } else {
+                if (!decision.equals("SHEUNG")) {
+                    AppState.getGameSocketClient().sendDiscardClaim(decision, List.of());
+                } else if (sheungCombos.size() == 1) {
+                    AppState.getGameSocketClient().sendDiscardClaim(decision, sheungCombos.getFirst());
+                } else {
+                    // TODO: Show another prompt for picking sheung combo
+                    showSheungSelector();
+                }
+            }
         }
+
+        availableDecisions = List.of();
 
         Platform.runLater(() -> {
             // hide all buttons
             updateDecisionButtons(List.of());
         });
+    }
+
+    // ================== SHEUNG SELECTION ==================
+
+    private void showSheungSelector() {
+        sheungOptions.getChildren().clear();
+
+        for (List<String> combo : sheungCombos) {
+            List<String> newCombo = new ArrayList<>(combo);
+            newCombo.add(lastDiscardedTile);
+            Collections.sort(newCombo);
+
+            HBox row = new HBox(5);
+            row.setAlignment(Pos.CENTER);
+
+            for (String tileName : newCombo) {
+                TileNode tile = new TileNode(tileName);
+                tile.setClickable(false);
+                tile.setPrefSize(32, 50);
+                row.getChildren().add(tile);
+            }
+
+            row.setOnMouseClicked(e -> {
+                AppState.getGameSocketClient().sendDiscardClaim("SHEUNG", combo);
+                hideSheungSelector(false);
+            });
+
+            sheungOptions.getChildren().add(row);
+
+            // add spacer after each combo
+            Region spacer = new Region();
+            spacer.setPrefWidth(16);
+            sheungOptions.getChildren().add(spacer);
+        }
+
+        sheungSelector.setVisible(true);
+        sheungSelector.setManaged(true);
+    }
+
+    private void hideSheungSelector(boolean showDecisionButtons) {
+        sheungSelector.setVisible(false);
+        sheungSelector.setManaged(false);
+        sheungOptions.getChildren().clear();
+
+        if (showDecisionButtons) {
+            updateDecisionButtons(availableDecisions);
+        } else {
+            updateDecisionButtons(List.of());
+        }
+    }
+
+    // ================== END GAME & DECISION ==================
+
+    private void onEndGameDecisionPrompt() {
+        Platform.runLater(() -> {
+            updateDecisionBox(false);
+        });
+    }
+
+    private void updateDecisionBox(boolean gameOngoing) {
+        actionButtonBox.setVisible(gameOngoing);
+        actionButtonBox.setManaged(gameOngoing);
+
+        endGameDecisionBox.setVisible(!gameOngoing);
+        endGameDecisionBox.setManaged(!gameOngoing);
+    }
+
+    private void sendEndGameDecision(String decision) {
+        if (AppState.getGameSocketClient() != null) {
+            AppState.getGameSocketClient().sendEndGameDecision(decision);
+        }
+
+        if (decision.equals("EXIT")) {
+            Platform.runLater(() -> {
+                AppNavigator.switchTo("room.fxml");
+            });
+        }
     }
 }

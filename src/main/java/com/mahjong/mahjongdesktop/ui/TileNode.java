@@ -39,13 +39,13 @@ public class TileNode extends StackPane {
 
     private void initializeUI() {
         tileLabel = new Label(getFaceUpDisplay());
-        tileLabel.setStyle("-fx-font-size: 20px; -fx-text-alignment: center; -fx-text-fill: black; -fx-background-color: #dddddd; -fx-padding: 1;");
+        tileLabel.setStyle("-fx-font-size: 22px; -fx-text-alignment: center; -fx-text-fill: black; -fx-background-color: #dddddd; -fx-padding: 1;");
 
         this.setStyle("-fx-border-color: #4a6a5a; -fx-border-width: 1; -fx-padding: 0;");
-        this.setPrefWidth(50);
-        this.setPrefHeight(50);
-        this.setMinWidth(50);
-        this.setMinHeight(50);
+        this.setPrefWidth(40);
+        this.setPrefHeight(40);
+        this.setMinWidth(40);
+        this.setMinHeight(40);
         this.getChildren().add(tileLabel);
     }
 
