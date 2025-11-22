@@ -6,10 +6,12 @@ import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
+import com.mahjong.mahjongdesktop.AppNavigator;
 import com.mahjong.mahjongdesktop.dto.prompt.DecisionOnDiscardPromptDTO;
 import com.mahjong.mahjongdesktop.dto.prompt.DecisionOnDrawPromptDTO;
 import com.mahjong.mahjongdesktop.dto.prompt.DiscardAfterDrawPromptDTO;
 import com.mahjong.mahjongdesktop.dto.prompt.DiscardPromptDTO;
+import javafx.application.Platform;
 import org.springframework.messaging.simp.stomp.StompFrameHandler;
 import org.springframework.messaging.simp.stomp.StompHeaders;
 
@@ -53,6 +55,21 @@ public class GameMessageHandler implements StompFrameHandler {
 
     public void removeStateListener(Consumer<GameStateDTO> listener) {
         stateListeners.remove(listener);
+    }
+    public void removeDecisionOnDrawPromptListener(Consumer<DecisionOnDrawPromptDTO> listener) {
+        decisionOnDrawPromptListeners.remove(listener);
+    }
+    public void removeDecisionOnDiscardPromptListener(Consumer<DecisionOnDiscardPromptDTO> listener) {
+        decisionOnDiscardPromptListeners.remove(listener);
+    }
+    public void removeDiscardPromptListener(Consumer<DiscardPromptDTO> listener) {
+        discardPromptListeners.remove(listener);
+    }
+    public void removeDiscardAfterDrawPromptListener(Consumer<DiscardAfterDrawPromptDTO> listener) {
+        discardAfterDrawPromptListeners.remove(listener);
+    }
+    public void removeEndGameDecisionPromptListener(Consumer<Void> listener) {
+        endGameDecisionPromptListeners.remove(listener);
     }
 
     public GameStateDTO getLatestState() {
@@ -125,9 +142,9 @@ public class GameMessageHandler implements StompFrameHandler {
                         "[GameMessageHandler] Log: " + dataObj
                 );
 
-                case "game_start" -> System.out.println(
-                        "[GameMessageHandler] Received game_start"
-                );
+                case "game_start" -> {
+                    handleGameStart();
+                }
 
                 case "game_end" -> System.out.println(
                         "[GameMessageHandler] Received game_end"
@@ -171,6 +188,13 @@ public class GameMessageHandler implements StompFrameHandler {
                 System.err.println("[GameMessageHandler] Listener error (" + label + "): " + e.getMessage());
             }
         }
+    }
+
+    private void handleGameStart() {
+        System.out.println("[GameMessageHandler] Received game_start");
+        Platform.runLater(() -> {
+            AppNavigator.switchTo("game.fxml");
+        });
     }
 
     @Override

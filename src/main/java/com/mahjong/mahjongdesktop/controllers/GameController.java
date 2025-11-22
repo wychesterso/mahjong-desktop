@@ -19,8 +19,9 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.*;
 
 import java.util.*;
+import java.util.function.Consumer;
 
-public class GameController {
+public class GameController implements CleanupAware {
 
     // ============ player zones ============
     @FXML private Label northNameLabel, southNameLabel, eastNameLabel, westNameLabel;
@@ -65,6 +66,14 @@ public class GameController {
 
     private final Map<String, String> seatToUI = new HashMap<>();
 
+    // ============ listener references ============
+    private Consumer<GameStateDTO> stateListener;
+    private Consumer<DecisionOnDrawPromptDTO> decisionOnDrawPromptListener;
+    private Consumer<DecisionOnDiscardPromptDTO> decisionOnDiscardPromptListener;
+    private Consumer<DiscardPromptDTO> discardPromptListener;
+    private Consumer<DiscardAfterDrawPromptDTO> discardAfterDrawListener;
+    private Consumer<Void> endGameDecisionListener;
+
     private boolean registeredWithHandlers = false;
 
     @FXML
@@ -79,12 +88,19 @@ public class GameController {
         if (handler != null && !registeredWithHandlers) {
             registeredWithHandlers = true;
 
-            handler.addStateListener(this::onGameState);
-            handler.addDecisionOnDrawPromptListener(this::onDecisionOnDrawPrompt);
-            handler.addDecisionOnDiscardPromptListener(this::onDecisionOnDiscardPrompt);
-            handler.addDiscardPromptListener(this::onDiscardPrompt);
-            handler.addDiscardAfterDrawPromptListener(this::onDiscardAfterDrawPrompt);
-            handler.addEndGameDecisionPromptListener(v -> onEndGameDecisionPrompt());
+            stateListener = this::onGameState;
+            decisionOnDrawPromptListener = this::onDecisionOnDrawPrompt;
+            decisionOnDiscardPromptListener = this::onDecisionOnDiscardPrompt;
+            discardPromptListener = this::onDiscardPrompt;
+            discardAfterDrawListener = this::onDiscardAfterDrawPrompt;
+            endGameDecisionListener = v -> onEndGameDecisionPrompt();
+
+            handler.addStateListener(stateListener);
+            handler.addDecisionOnDrawPromptListener(decisionOnDrawPromptListener);
+            handler.addDecisionOnDiscardPromptListener(decisionOnDiscardPromptListener);
+            handler.addDiscardPromptListener(discardPromptListener);
+            handler.addDiscardAfterDrawPromptListener(discardAfterDrawListener);
+            handler.addEndGameDecisionPromptListener(endGameDecisionListener);
 
             GameStateDTO initial = handler.getLatestState();
             if (initial != null && initial.getTable() != null) {
@@ -243,7 +259,6 @@ public class GameController {
             }
 
             if (state.getTable() != null && state.getTable().getDiscardPile() != null) {
-                updateCenterDiscardPile(state.getTable().getDiscardPile());
                 updateCenterDiscardPile(state.getTable().getDiscardPile());
             }
 
@@ -618,6 +633,20 @@ public class GameController {
             Platform.runLater(() -> {
                 AppNavigator.switchTo("room.fxml");
             });
+        }
+    }
+
+    // ================== CLEANUP ==================
+    @Override
+    public void cleanup() {
+        GameMessageHandler handler = AppState.getGameMessageHandler();
+        if (handler != null) {
+            handler.removeStateListener(stateListener);
+            handler.removeDecisionOnDrawPromptListener(decisionOnDrawPromptListener);
+            handler.removeDecisionOnDiscardPromptListener(decisionOnDiscardPromptListener);
+            handler.removeDiscardPromptListener(discardPromptListener);
+            handler.removeDiscardAfterDrawPromptListener(discardAfterDrawListener);
+            handler.removeEndGameDecisionPromptListener(endGameDecisionListener);
         }
     }
 }

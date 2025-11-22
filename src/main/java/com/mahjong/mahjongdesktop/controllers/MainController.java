@@ -9,6 +9,8 @@ import java.io.IOException;
 
 public class MainController {
 
+    private Object currentChildController;
+
     @FXML
     private StackPane contentArea;
 
@@ -37,11 +39,21 @@ public class MainController {
         loadView("login.fxml");
     }
 
+    public Object getCurrentChildController() {
+        return currentChildController;
+    }
+
     public void loadView(String fxml) {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/mahjong/mahjongdesktop/" + fxml));
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/com/mahjong/mahjongdesktop/" + fxml)
+            );
+
             Node view = loader.load();
+            currentChildController = loader.getController();
+
             contentArea.getChildren().setAll(view);
+
         } catch (IOException e) {
             e.printStackTrace();
         }

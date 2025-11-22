@@ -38,8 +38,6 @@ public class RoomController {
     private final ObservableList<PlayerRow> players = FXCollections.observableArrayList();
     private final ObjectMapper mapper = new ObjectMapper();
 
-    private GameSocketClient gameSocketClient;
-
     @FXML
     public void initialize() {
         seatColumn.setCellValueFactory(new PropertyValueFactory<>("seat"));
@@ -263,10 +261,7 @@ public class RoomController {
 
                 int responseCode = conn.getResponseCode();
                 if (responseCode == 200) {
-                    System.out.println("Game started successfully.");
-                    Platform.runLater(() -> {
-                        AppNavigator.switchTo("game.fxml");
-                    });
+                    System.out.println("[RoomController] Game started successfully.");
                 } else {
                     Platform.runLater(() -> showError("Failed to start game. (" + responseCode + ")"));
                 }
@@ -304,7 +299,7 @@ public class RoomController {
                 Platform.runLater(() -> {
                     updateUI(dto);
 
-                    if (gameSocketClient == null) {
+                    if (AppState.getGameSocketClient() == null) {
                         connectToGameSocket();
                     }
                 });
