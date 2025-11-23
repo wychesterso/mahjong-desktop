@@ -11,6 +11,7 @@ import com.mahjong.mahjongdesktop.dto.prompt.DecisionOnDiscardPromptDTO;
 import com.mahjong.mahjongdesktop.dto.prompt.DecisionOnDrawPromptDTO;
 import com.mahjong.mahjongdesktop.dto.prompt.DiscardAfterDrawPromptDTO;
 import com.mahjong.mahjongdesktop.dto.prompt.DiscardPromptDTO;
+import com.mahjong.mahjongdesktop.dto.state.EndGameDTO;
 import javafx.application.Platform;
 import org.springframework.messaging.simp.stomp.StompFrameHandler;
 import org.springframework.messaging.simp.stomp.StompHeaders;
@@ -24,12 +25,14 @@ import com.mahjong.mahjongdesktop.dto.state.GameStateDTO;
  */
 public class GameMessageHandler implements StompFrameHandler {
 
+    private final List<Consumer<Void>> startGameListeners = new CopyOnWriteArrayList<>();
     private final List<Consumer<GameStateDTO>> stateListeners = new CopyOnWriteArrayList<>();
     private final List<Consumer<DecisionOnDrawPromptDTO>> decisionOnDrawPromptListeners = new CopyOnWriteArrayList<>();
     private final List<Consumer<DecisionOnDiscardPromptDTO>> decisionOnDiscardPromptListeners = new CopyOnWriteArrayList<>();
     private final List<Consumer<DiscardPromptDTO>> discardPromptListeners = new CopyOnWriteArrayList<>();
     private final List<Consumer<DiscardAfterDrawPromptDTO>> discardAfterDrawPromptListeners = new CopyOnWriteArrayList<>();
     private final List<Consumer<Void>> endGameDecisionPromptListeners = new CopyOnWriteArrayList<>();
+    private final List<Consumer<EndGameDTO>> endGameListeners = new CopyOnWriteArrayList<>();
 
     private final ObjectMapper mapper = new ObjectMapper();
     private volatile GameStateDTO latestState;
@@ -52,6 +55,12 @@ public class GameMessageHandler implements StompFrameHandler {
     public void addEndGameDecisionPromptListener(Consumer<Void> listener) {
         endGameDecisionPromptListeners.add(listener);
     }
+    public void addEndGameListener(Consumer<EndGameDTO> listener) {
+        endGameListeners.add(listener);
+    }
+    public void addStartGameListener(Consumer<Void> listener) {
+        startGameListeners.add(listener);
+    }
 
     public void removeStateListener(Consumer<GameStateDTO> listener) {
         stateListeners.remove(listener);
@@ -70,6 +79,12 @@ public class GameMessageHandler implements StompFrameHandler {
     }
     public void removeEndGameDecisionPromptListener(Consumer<Void> listener) {
         endGameDecisionPromptListeners.remove(listener);
+    }
+    public void removeEndGameListener(Consumer<EndGameDTO> listener) {
+        endGameListeners.remove(listener);
+    }
+    public void removeStartGameListener(Consumer<Void> listener) {
+        startGameListeners.remove(listener);
     }
 
     public GameStateDTO getLatestState() {
@@ -137,17 +152,31 @@ public class GameMessageHandler implements StompFrameHandler {
                     }
                 }
 
+                case "game_start" -> {
+                    Platform.runLater(() -> {
+                        AppNavigator.switchTo("game.fxml");
+                    });
+
+                    for (Consumer<Void> listener : startGameListeners) {
+                        try {
+                            listener.accept(null);
+                        } catch (Exception e) {
+                            System.err.println("[GameMessageHandler] Listener error (" + "game_start" + "): " + e.getMessage());
+                        }
+                    }
+                }
+
+                case "game_end" -> handleTypedMessage(
+                        dataObj,
+                        EndGameDTO.class,
+                        endGameListeners,
+                        null,
+                        "game_end"
+                );
+
                 // TODO: everything below here
                 case "log" -> System.out.println(
                         "[GameMessageHandler] Log: " + dataObj
-                );
-
-                case "game_start" -> {
-                    handleGameStart();
-                }
-
-                case "game_end" -> System.out.println(
-                        "[GameMessageHandler] Received game_end"
                 );
 
                 case "session_ended" -> System.out.println(
@@ -188,13 +217,6 @@ public class GameMessageHandler implements StompFrameHandler {
                 System.err.println("[GameMessageHandler] Listener error (" + label + "): " + e.getMessage());
             }
         }
-    }
-
-    private void handleGameStart() {
-        System.out.println("[GameMessageHandler] Received game_start");
-        Platform.runLater(() -> {
-            AppNavigator.switchTo("game.fxml");
-        });
     }
 
     @Override

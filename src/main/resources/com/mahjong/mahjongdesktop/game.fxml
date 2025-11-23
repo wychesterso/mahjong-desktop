@@ -3,138 +3,196 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.*?>
 
-<BorderPane xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.mahjong.mahjongdesktop.controllers.GameController"
-            prefWidth="1400" prefHeight="900"
-            style="-fx-background-color: #2d5a3d;">
+<StackPane fx:id="rootStack" xmlns:fx="http://javafx.com/fxml"
+           fx:controller="com.mahjong.mahjongdesktop.controllers.GameController"
+           prefWidth="1400" prefHeight="900">
 
-    <!-- TOP: NORTH PLAYER -->
-    <top>
-        <VBox spacing="8" style="-fx-padding: 12; -fx-alignment: CENTER;">
-            <!-- name + turn indicator -->
-            <HBox alignment="CENTER" spacing="12">
-                <Label fx:id="northNameLabel" text="North Player" 
-                        style="-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;" />
-                <Region fx:id="northTurnIndicator" prefWidth="0" prefHeight="0" 
-                        style="-fx-border-color: transparent; -fx-border-radius: 5; -fx-padding: 4;" />
-            </HBox>
-            
-            <!-- flowers, melds, unrevealed hand -->
-            <HBox fx:id="northContainer" spacing="8" alignment="CENTER" style="-fx-border-color: #4a8a5a; -fx-border-width: 1; -fx-padding: 8;">
-                <HBox fx:id="northFlowers" spacing="2" alignment="CENTER" style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;" />
-                <Region prefWidth="12" />
-                <HBox fx:id="northMelds" spacing="4" alignment="CENTER" style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;" />
-                <Region prefWidth="12" />
-                <HBox fx:id="northHand" spacing="1" alignment="CENTER_LEFT" />
-            </HBox>
-        </VBox>
-    </top>
+    <!-- GAME UI -->
+    <BorderPane fx:id="mainRoot"
+                style="-fx-background-color: #2d5a3d;">
 
-    <!-- BOTTOM: SOUTH PLAYER (YOU) -->
-    <bottom>
-        <VBox spacing="8" style="-fx-padding: 12; -fx-alignment: CENTER;">
-            <!-- flowers, melds, unrevealed hand, drawn tile -->
-            <HBox fx:id="southContainer" spacing="8" alignment="CENTER" style="-fx-border-color: #4a8a5a; -fx-border-width: 1; -fx-padding: 8;">
-                <HBox fx:id="southFlowers" spacing="2" alignment="CENTER" style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;" />
-                <Region prefWidth="12" />
-                <HBox fx:id="southMelds" spacing="4" alignment="CENTER" style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;" />
-                <Region prefWidth="12" />
-                <HBox fx:id="southHand" spacing="1" alignment="CENTER_LEFT" />
-                <Region prefWidth="12" />
-                <HBox fx:id="southDrawnTile" spacing="1" alignment="CENTER_LEFT" />
-            </HBox>
-
-            <!-- name + turn indicator -->
-            <HBox alignment="CENTER" spacing="12">
-                <Label fx:id="southNameLabel" text="You"
-                       style="-fx-text-fill: #ffff99; -fx-font-size: 14px; -fx-font-weight: bold;" />
-                <Region fx:id="southTurnIndicator" prefWidth="0" prefHeight="0"
-                        style="-fx-border-color: transparent; -fx-border-radius: 5; -fx-padding: 4;" />
-            </HBox>
-
-            <!-- action buttons -->
-            <HBox fx:id="actionButtonBox" alignment="CENTER" spacing="12" style="-fx-padding: 8;">
-                <Label text="Double-click a tile to discard" style="-fx-text-fill: #aaaaaa; -fx-font-size: 11px;" />
-                <Region prefWidth="12" />
-
-                <!-- decision buttons -->
-                <Button fx:id="pongButton" text="Pong" style="-fx-padding: 6; -fx-font-size: 11px;" visible="false" managed="false" />
-                <Button fx:id="sheungButton" text="Sheung" style="-fx-padding: 6; -fx-font-size: 11px;" visible="false" managed="false" />
-                <Button fx:id="kongButton" text="Kong" style="-fx-padding: 6; -fx-font-size: 11px;" visible="false" managed="false" />
-                <Button fx:id="winButton" text="Win" style="-fx-padding: 6; -fx-font-size: 11px;" visible="false" managed="false" />
-                <Button fx:id="passButton" text="Pass" style="-fx-padding: 6; -fx-font-size: 11px;" visible="false" managed="false" />
-
-                <!-- sheung selector -->
-                <HBox fx:id="sheungSelector" alignment="CENTER" spacing="12" style="-fx-padding: 8;" visible="false" managed="false">
-                    <Label text="Select a Sheung:" style="-fx-text-fill: #ffffcc; -fx-font-size: 12;" />
-                    <HBox fx:id="sheungOptions" alignment="CENTER" spacing="6" />
-                    <Button fx:id="cancelSheungBtn" text="Cancel" style="-fx-padding: 6; -fx-font-size: 11px;" />
+        <!-- TOP: NORTH PLAYER -->
+        <top>
+            <VBox spacing="8"
+                  style="-fx-padding: 12; -fx-alignment: CENTER; -fx-border-color: #336344; -fx-border-width: 1; -fx-background-color: #336344;">
+                <!-- name + turn indicator -->
+                <HBox alignment="CENTER" spacing="12">
+                    <Label fx:id="northNameLabel" text="North Player"
+                           style="-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;"/>
+                    <Region fx:id="northTurnIndicator" prefWidth="0" prefHeight="0"
+                            style="-fx-border-color: transparent; -fx-border-radius: 5; -fx-padding: 4;"/>
                 </HBox>
 
-                <!-- decision buttons and sheung selector shouldn't coexist! -->
-            </HBox>
+                <!-- flowers, melds, unrevealed hand -->
+                <HBox fx:id="northContainer" rotate="180" spacing="8" alignment="CENTER"
+                      style="-fx-border-color: #4a8a5a; -fx-border-width: 0; -fx-padding: 8;">
+                    <HBox fx:id="northFlowers" spacing="2" alignment="CENTER"
+                          style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;"/>
+                    <Region prefWidth="12"/>
+                    <HBox fx:id="northMelds" spacing="4" alignment="CENTER"
+                          style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;"/>
+                    <Region prefWidth="12"/>
+                    <HBox fx:id="northHand" spacing="1" alignment="CENTER_LEFT"/>
+                </HBox>
+            </VBox>
+        </top>
 
-            <!-- end game decision box -->
-            <HBox fx:id="endGameDecisionBox" alignment="CENTER" spacing="12" style="-fx-padding: 8;" visible="false" managed="false">
-                <Label text="Game Over!" style="-fx-text-fill: #ffffcc; -fx-font-size: 14px;"/>
+        <!-- BOTTOM: SOUTH PLAYER (YOU) -->
+        <bottom>
+            <VBox spacing="8"
+                  style="-fx-padding: 12; -fx-alignment: CENTER; -fx-border-color: #336344; -fx-border-width: 1; -fx-background-color: #336344;">
+                <!-- flowers, melds, unrevealed hand, drawn tile -->
+                <HBox spacing="8" alignment="CENTER"
+                      style="-fx-border-color: #4a8a5a; -fx-border-width: 0; -fx-padding: 8;">
+                    <HBox fx:id="southFlowers" spacing="2" alignment="CENTER"
+                          style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;"/>
+                    <Region prefWidth="12"/>
+                    <HBox fx:id="southMelds" spacing="4" alignment="CENTER"
+                          style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;"/>
+                    <Region prefWidth="12"/>
+                    <HBox fx:id="southHand" spacing="1" alignment="CENTER_LEFT"/>
+                    <Region prefWidth="12"/>
+                    <HBox fx:id="southDrawnTile" spacing="1" alignment="CENTER_LEFT"/>
+                </HBox>
 
-                <Button fx:id="nextGameButton" text="Next Game" style="-fx-padding: 6;"/>
-                <Button fx:id="exitButton" text="Exit Room" style="-fx-padding: 6;"/>
+                <!-- name + turn indicator -->
+                <HBox alignment="CENTER" spacing="12">
+                    <Label fx:id="southNameLabel" text="You"
+                           style="-fx-text-fill: #ffff99; -fx-font-size: 14px; -fx-font-weight: bold;"/>
+                    <Region fx:id="southTurnIndicator" prefWidth="0" prefHeight="0"
+                            style="-fx-border-color: transparent; -fx-border-radius: 5; -fx-padding: 4;"/>
+                </HBox>
+
+                <!-- action buttons -->
+                <HBox alignment="CENTER" spacing="12" style="-fx-padding: 8;">
+                    <Label text="Double-click a tile to discard" style="-fx-text-fill: #aaaaaa; -fx-font-size: 11px;"/>
+                    <Region prefWidth="12"/>
+
+                    <!-- decision buttons -->
+                    <Button fx:id="pongButton" text="Pong" style="-fx-padding: 6; -fx-font-size: 11px;" visible="false"
+                            managed="false"/>
+                    <Button fx:id="sheungButton" text="Sheung" style="-fx-padding: 6; -fx-font-size: 11px;"
+                            visible="false" managed="false"/>
+                    <Button fx:id="kongButton" text="Kong" style="-fx-padding: 6; -fx-font-size: 11px;" visible="false"
+                            managed="false"/>
+                    <Button fx:id="winButton" text="Win" style="-fx-padding: 6; -fx-font-size: 11px;" visible="false"
+                            managed="false"/>
+                    <Button fx:id="passButton" text="Pass" style="-fx-padding: 6; -fx-font-size: 11px;" visible="false"
+                            managed="false"/>
+
+                    <!-- sheung selector -->
+                    <HBox fx:id="sheungSelector" alignment="CENTER" spacing="12" style="-fx-padding: 8;" visible="false"
+                          managed="false">
+                        <Label text="Select a Sheung:" style="-fx-text-fill: #ffffcc; -fx-font-size: 12;"/>
+                        <HBox fx:id="sheungOptions" alignment="CENTER" spacing="6"/>
+                        <Button fx:id="cancelSheungBtn" text="Cancel" style="-fx-padding: 6; -fx-font-size: 11px;"/>
+                    </HBox>
+
+                    <!-- decision buttons and sheung selector shouldn't coexist! -->
+                </HBox>
+            </VBox>
+        </bottom>
+
+        <!-- LEFT: WEST PLAYER (vertical) -->
+        <left>
+            <StackPane maxWidth="150" minWidth="150" prefWidth="150"
+                       style="-fx-alignment: CENTER; -fx-border-color: #336344; -fx-border-width: 1; -fx-background-color: #336344;">
+                <VBox fx:id="westContainer"
+                      maxHeight="150" minHeight="150" prefHeight="150"
+                      rotate="90" spacing="8"
+                      style="-fx-padding: 12; -fx-alignment: CENTER;">
+                    <!-- flowers, melds, unrevealed hand -->
+                    <HBox spacing="8" alignment="CENTER"
+                          style="-fx-border-color: #4a8a5a; -fx-border-width: 0; -fx-padding: 8;">
+                        <HBox fx:id="westFlowers" spacing="2" alignment="CENTER"
+                              style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;"/>
+                        <Region prefWidth="12"/>
+                        <HBox fx:id="westMelds" spacing="4" alignment="CENTER"
+                              style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;"/>
+                        <Region prefWidth="12"/>
+                        <HBox fx:id="westHand" spacing="1" alignment="CENTER"
+                              style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;"/>
+                    </HBox>
+
+                    <!-- name + turn indicator -->
+                    <HBox alignment="CENTER" spacing="12">
+                        <Label fx:id="westNameLabel" text="West Player"
+                               style="-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;"/>
+                        <Region fx:id="westTurnIndicator" prefWidth="0" prefHeight="0"
+                                style="-fx-border-color: transparent; -fx-border-radius: 5; -fx-padding: 4;"/>
+                    </HBox>
+                </VBox>
+            </StackPane>
+        </left>
+
+        <!-- CENTER: DISCARD PILE (fixed 300x300 square) -->
+        <center>
+            <VBox alignment="CENTER" spacing="8">
+                <!--            <Label text="Discard Pile" style="-fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold;" />-->
+                <GridPane fx:id="discardPile" alignment="CENTER" hgap="4" vgap="4"
+                          style="-fx-border-color: #666; -fx-border-width: 2; -fx-padding: 10; -fx-background-color: rgba(0,0,0,0.3);"
+                          prefWidth="500" prefHeight="400" minWidth="500" minHeight="400" maxWidth="500"
+                          maxHeight="400"/>
+            </VBox>
+        </center>
+
+        <!-- RIGHT: EAST PLAYER -->
+        <right>
+            <StackPane maxWidth="150" minWidth="150" prefWidth="150"
+                       style="-fx-alignment: CENTER; -fx-border-color: #336344; -fx-border-width: 1; -fx-background-color: #336344;">
+                <VBox fx:id="eastContainer"
+                      maxHeight="150" minHeight="150" prefHeight="150"
+                      rotate="-90" spacing="8"
+                      style="-fx-padding: 12; -fx-alignment: CENTER;">
+                    <!-- flowers, melds, unrevealed hand -->
+                    <HBox spacing="8" alignment="CENTER"
+                          style="-fx-border-color: #4a8a5a; -fx-border-width: 0; -fx-padding: 8;">
+                        <HBox fx:id="eastFlowers" spacing="2" alignment="CENTER"
+                              style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;"/>
+                        <Region prefWidth="12"/>
+                        <HBox fx:id="eastMelds" spacing="4" alignment="CENTER"
+                              style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;"/>
+                        <Region prefWidth="12"/>
+                        <HBox fx:id="eastHand" spacing="1" alignment="CENTER"
+                              style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;"/>
+                    </HBox>
+
+                    <!-- name + turn indicator -->
+                    <HBox alignment="CENTER" spacing="12">
+                        <Label fx:id="eastNameLabel" text="East Player"
+                               style="-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;"/>
+                        <Region fx:id="eastTurnIndicator" prefWidth="0" prefHeight="0"
+                                style="-fx-border-color: transparent; -fx-border-radius: 5; -fx-padding: 4;"/>
+                    </HBox>
+                </VBox>
+            </StackPane>
+        </right>
+    </BorderPane>
+
+    <!-- RESULT OVERLAY -->
+    <StackPane fx:id="resultOverlay"
+               visible="false" managed="false"
+               style="-fx-background-color: rgba(0, 0, 0, 0.65);">
+
+        <VBox spacing="16"
+              alignment="CENTER"
+              style="-fx-padding: 30; -fx-background-radius: 10;">
+
+            <Label text="Game Results"
+                   style="-fx-text-fill: white; -fx-font-size: 24px; -fx-font-weight: bold;" />
+
+            <VBox fx:id="resultContent" spacing="8"
+                  alignment="CENTER"
+                  style="-fx-padding: 10;" />
+
+            <HBox fx:id="nextGameDecisionBox"
+                  visible="false" managed="false"
+                  spacing="12" alignment="CENTER">
+                <Button fx:id="nextGameButton" text="Next Game" />
+                <Button fx:id="exitButton" text="Exit Room" />
             </HBox>
         </VBox>
-    </bottom>
 
-    <!-- LEFT: WEST PLAYER (vertical) -->
-    <left>
-        <VBox fx:id="westContainer" spacing="8" style="-fx-padding: 12; -fx-alignment: CENTER;">
-            <!-- flowers, melds, unrevealed hand -->
-            <HBox spacing="8" alignment="CENTER" style="-fx-border-color: #4a8a5a; -fx-border-width: 1; -fx-padding: 8;">
-                <HBox fx:id="westFlowers" spacing="2" alignment="CENTER" style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;" />
-                <Region prefWidth="12" />
-                <HBox fx:id="westMelds" spacing="4" alignment="CENTER" style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;" />
-                <Region prefWidth="12" />
-                <HBox fx:id="westHand" spacing="1" alignment="CENTER" style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;" />
-            </HBox>
+    </StackPane>
 
-            <!-- name + turn indicator -->
-            <HBox alignment="CENTER" spacing="12">
-                <Label fx:id="westNameLabel" text="West Player"
-                       style="-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;" />
-                <Region fx:id="westTurnIndicator" prefWidth="0" prefHeight="0"
-                        style="-fx-border-color: transparent; -fx-border-radius: 5; -fx-padding: 4;" />
-            </HBox>
-        </VBox>
-    </left>
-
-    <!-- CENTER: DISCARD PILE (fixed 300x300 square) -->
-    <center>
-        <VBox alignment="CENTER" spacing="8">
-<!--            <Label text="Discard Pile" style="-fx-text-fill: white; -fx-font-size: 12px; -fx-font-weight: bold;" />-->
-            <GridPane fx:id="discardPile" alignment="CENTER" hgap="4" vgap="4" 
-                     style="-fx-border-color: #666; -fx-border-width: 2; -fx-padding: 10; -fx-background-color: rgba(0,0,0,0.3);"
-                     prefWidth="500" prefHeight="400" minWidth="500" minHeight="400" maxWidth="500" maxHeight="400" />
-        </VBox>
-    </center>
-
-    <!-- RIGHT: EAST PLAYER -->
-    <right>
-        <VBox fx:id="eastContainer" spacing="8" style="-fx-padding: 12; -fx-alignment: CENTER;">
-            <!-- flowers, melds, unrevealed hand -->
-            <HBox spacing="8" alignment="CENTER" style="-fx-border-color: #4a8a5a; -fx-border-width: 1; -fx-padding: 8;">
-                <HBox fx:id="eastFlowers" spacing="2" alignment="CENTER" style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;" />
-                <Region prefWidth="12" />
-                <HBox fx:id="eastMelds" spacing="4" alignment="CENTER" style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;" />
-                <Region prefWidth="12" />
-                <HBox fx:id="eastHand" spacing="1" alignment="CENTER" style="-fx-border-color: #4a6a5a; -fx-border-width: 0; -fx-padding: 2;" />
-            </HBox>
-
-            <!-- name + turn indicator -->
-            <HBox alignment="CENTER" spacing="12">
-                <Label fx:id="eastNameLabel" text="East Player"
-                       style="-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;" />
-                <Region fx:id="eastTurnIndicator" prefWidth="0" prefHeight="0"
-                        style="-fx-border-color: transparent; -fx-border-radius: 5; -fx-padding: 4;" />
-            </HBox>
-        </VBox>
-    </right>
-</BorderPane>
+</StackPane>
