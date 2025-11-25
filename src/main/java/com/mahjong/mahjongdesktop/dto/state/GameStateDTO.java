@@ -9,6 +9,9 @@ import java.util.Map;
  * Represents the complete game state sent from the server.
  */
 public class GameStateDTO {
+    @JsonProperty("gameStateVersion")
+    private long gameStateVersion;
+
     @JsonProperty("table")
     private TableDTO table;
 
@@ -50,10 +53,11 @@ public class GameStateDTO {
 
     public GameStateDTO() {}
 
-    public GameStateDTO(TableDTO table, String currentTurn, String windSeat, String zhongSeat,
-                       Map<String, String> playerNames, Map<String, List<String>> expectedClaimants,
-                       String lastDiscardedTile, String lastDiscarder, List<String> availableDecisions,
-                       String drawnTile, boolean gameActive, List<String> winnerSeats, int numDraws) {
+    public GameStateDTO(long gameStateVersion, TableDTO table, String currentTurn, String windSeat,
+                        String zhongSeat, Map<String, String> playerNames, Map<String, List<String>> expectedClaimants,
+                        String lastDiscardedTile, String lastDiscarder, List<String> availableDecisions,
+                        String drawnTile, boolean gameActive, List<String> winnerSeats, int numDraws) {
+        this.gameStateVersion = gameStateVersion;
         this.table = table;
         this.currentTurn = currentTurn;
         this.windSeat = windSeat;
@@ -67,6 +71,14 @@ public class GameStateDTO {
         this.gameActive = gameActive;
         this.winnerSeats = winnerSeats;
         this.numDraws = numDraws;
+    }
+
+    public long getGameStateVersion() {
+        return gameStateVersion;
+    }
+
+    public void setGameStateVersion(long gameStateVersion) {
+        this.gameStateVersion = gameStateVersion;
     }
 
     public TableDTO getTable() {

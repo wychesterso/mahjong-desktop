@@ -7,7 +7,7 @@ import java.util.Set;
 
 public class ScoringContextDTO {
     @JsonProperty("scoringPatterns")
-    private List<String> scoringPatterns;
+    private List<ScoringPatternDTO> scoringPatterns;
 
     @JsonProperty("flowers")
     private Set<String> flowers;
@@ -26,7 +26,7 @@ public class ScoringContextDTO {
 
     public ScoringContextDTO() {}
 
-    public ScoringContextDTO(List<String> scoringPatterns,
+    public ScoringContextDTO(List<ScoringPatternDTO> scoringPatterns,
                              Set<String> flowers,
                              List<List<String>> revealedGroups,
                              List<List<String>> concealedGroups,
@@ -40,11 +40,11 @@ public class ScoringContextDTO {
         this.winningTile = winningTile;
     }
 
-    public List<String> getScoringPatterns() {
+    public List<ScoringPatternDTO> getScoringPatterns() {
         return scoringPatterns;
     }
 
-    public void setScoringPatterns(List<String> scoringPatterns) {
+    public void setScoringPatterns(List<ScoringPatternDTO> scoringPatterns) {
         this.scoringPatterns = scoringPatterns;
     }
 

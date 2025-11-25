@@ -10,8 +10,8 @@
 
     <Label text="Login" style="-fx-font-size: 18px;" />
 
-    <TextField fx:id="usernameField" promptText="Username" />
-    <PasswordField fx:id="passwordField" promptText="Password" />
+    <TextField fx:id="usernameField" promptText="Username" maxWidth="300" />
+    <PasswordField fx:id="passwordField" promptText="Password" maxWidth="300" />
 
     <Button text="Login" onAction="#handleLogin" />
     <Label fx:id="errorLabel" textFill="red" />

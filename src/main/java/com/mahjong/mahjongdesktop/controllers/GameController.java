@@ -7,14 +7,12 @@ import com.mahjong.mahjongdesktop.dto.prompt.DecisionOnDiscardPromptDTO;
 import com.mahjong.mahjongdesktop.dto.prompt.DecisionOnDrawPromptDTO;
 import com.mahjong.mahjongdesktop.dto.prompt.DiscardAfterDrawPromptDTO;
 import com.mahjong.mahjongdesktop.dto.prompt.DiscardPromptDTO;
-import com.mahjong.mahjongdesktop.dto.state.EndGameDTO;
-import com.mahjong.mahjongdesktop.dto.state.GameStateDTO;
-import com.mahjong.mahjongdesktop.dto.state.HandDTO;
-import com.mahjong.mahjongdesktop.dto.state.ScoringContextDTO;
+import com.mahjong.mahjongdesktop.dto.state.*;
 import com.mahjong.mahjongdesktop.network.GameMessageHandler;
 import com.mahjong.mahjongdesktop.ui.TileNode;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.geometry.HPos;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
@@ -85,12 +83,15 @@ public class GameController implements CleanupAware {
 
     private boolean registeredWithHandlers = false;
 
+    // ============ game state version ============
+    private long gameStateVersion = -1;
+    private long tableVersion = -1;
+
     @FXML
     public void initialize() {
         // map seats to UI components (fixed)
         mapSeatsToUI();
         enforceFixedBoxSizes();
-//        rotateSideHands();
 
         // subscribe to game state updates
         handler = AppState.getGameMessageHandler();
@@ -258,6 +259,45 @@ public class GameController implements CleanupAware {
         HBox.setHgrow(eastContainer, Priority.NEVER);
     }
 
+    // ================== CHECK STATE VERSIONS ==================
+    /**
+     * Check the received game state version.
+     * @return whether it is the newest version so far.
+     */
+    private boolean checkGameStateVersion(GameStateDTO state) {
+        if (state == null) return false;
+
+        long v = state.getGameStateVersion();
+        if (v < gameStateVersion) {
+            // ignore old updates
+            System.out.println("[GameController] Ignoring stale game state " + v);
+            return false;
+        }
+
+        if (!checkTableVersion(state.getTable())) return false;
+
+        gameStateVersion = v;
+        return true;
+    }
+
+    /**
+     * Check the received table version.
+     * @return whether it is the newest version so far.
+     */
+    private boolean checkTableVersion(TableDTO table) {
+        if (table == null) return false;
+
+        long v = table.getTableVersion();
+        if (v < tableVersion) {
+            // ignore old updates
+            System.out.println("[GameController] Ignoring stale table state " + v);
+            return false;
+        }
+
+        tableVersion = v;
+        return true;
+    }
+
     // ================== GAME STATE UPDATES ==================
 
     private void onStartGame() {
@@ -267,7 +307,7 @@ public class GameController implements CleanupAware {
     }
 
     private void onGameState(GameStateDTO state) {
-        if (state == null) return;
+        if (state == null || !checkGameStateVersion(state)) return;
 
         if (selfSeat == null && state.getTable() != null && state.getTable().getSelfSeat() != null) {
             selfSeat = state.getTable().getSelfSeat();
@@ -480,7 +520,7 @@ public class GameController implements CleanupAware {
     // ================== PROMPTS ==================
 
     private void onDecisionOnDrawPrompt(DecisionOnDrawPromptDTO data) {
-        if (data == null) return;
+        if (data == null || !checkTableVersion(data.getTable())) return;
         decisionDraw = true;
         availableDecisions = data.getAvailableOptions();
 
@@ -490,7 +530,7 @@ public class GameController implements CleanupAware {
     }
 
     private void onDecisionOnDiscardPrompt(DecisionOnDiscardPromptDTO data) {
-        if (data == null) return;
+        if (data == null || !checkTableVersion(data.getTable())) return;
         decisionDraw = false;
         availableDecisions = data.getAvailableOptions();
         lastDiscardedTile = data.getDiscardedTile();
@@ -504,16 +544,14 @@ public class GameController implements CleanupAware {
 
     private void onDiscardPrompt(DiscardPromptDTO data) {
         System.out.println("[GameController] onDiscardPrompt");
-        if (data == null) return;
-        System.out.println("[GameController] onDiscardPrompt run");
+        if (data == null || !checkTableVersion(data.getTable())) return;
 
         Platform.runLater(this::enableDiscard);
     }
 
     private void onDiscardAfterDrawPrompt(DiscardAfterDrawPromptDTO data) {
         System.out.println("[GameController] onDiscardAfterDrawPrompt");
-        if (data == null) return;
-        System.out.println("[GameController] onDiscardAfterDrawPrompt run");
+        if (data == null || !checkTableVersion(data.getTable())) return;
 
         Platform.runLater(this::enableDiscard);
     }
@@ -567,7 +605,7 @@ public class GameController implements CleanupAware {
 
     private void onSouthHandTileClicked(TileNode clicked) {
         if (!allowDiscard) {
-            System.out.println("[GameController] allowDiscard is false");
+            System.out.println("[GameController] Cannot discard when allowDiscard is false");
             return;
         }
 
@@ -718,7 +756,7 @@ public class GameController implements CleanupAware {
 
     private VBox buildWinnerBox(String seat, ScoringContextDTO ctx) {
         VBox box = new VBox(6);
-        box.setStyle("-fx-border-color: #666; -fx-border-width: 2; -fx-padding: 12; -fx-background-color: rgba(0,0,0,0.3); -fx-background-radius: 8;");
+        box.setStyle("-fx-border-color: #666; -fx-border-width: 2; -fx-padding: 12; -fx-background-color: rgba(0,0,0,0.6); -fx-background-radius: 8;");
         box.setAlignment(Pos.CENTER);
 
         Label seatLabel = new Label("Winner: " + seat);
@@ -794,15 +832,81 @@ public class GameController implements CleanupAware {
 
         // scoring patterns
         if (ctx.getScoringPatterns() != null && !ctx.getScoringPatterns().isEmpty()) {
+            // title
             Label patternLabel = new Label("SCORING PATTERNS");
             patternLabel.setStyle("-fx-text-fill: #ffffff; -fx-font-size: 14px; -fx-underline: true;");
             box.getChildren().add(patternLabel);
 
-            for (String pattern : ctx.getScoringPatterns()) {
-                Label p = new Label("• " + pattern);
-                p.setStyle("-fx-text-fill: #cccccc; -fx-font-size: 13px;");
-                box.getChildren().add(p);
+            // table
+            GridPane table = new GridPane();
+            table.setHgap(20);
+            table.setVgap(6);
+            table.setAlignment(Pos.CENTER);
+
+            table.setMinWidth(260);
+            table.setPrefWidth(300);
+            table.setMaxWidth(340);
+
+            ColumnConstraints col1 = new ColumnConstraints();
+            col1.setPercentWidth(70);
+
+            ColumnConstraints col2 = new ColumnConstraints();
+            col2.setPercentWidth(30);
+            col2.setHalignment(HPos.RIGHT);
+
+            table.getColumnConstraints().addAll(col1, col2);
+
+            int row = 0;
+
+            // scoring patterns inside table
+            ctx.getScoringPatterns().sort((a, b) -> a.getValue() - b.getValue());
+            for (ScoringPatternDTO pattern : ctx.getScoringPatterns()) {
+                Label idLabel = new Label(pattern.getId());
+                idLabel.setStyle("-fx-text-fill: #cccccc; -fx-font-size: 13px;");
+
+                Label valueLabel = new Label(String.valueOf(pattern.getValue()));
+                valueLabel.setStyle("-fx-text-fill: #cccccc; -fx-font-size: 13px;");
+                GridPane.setHalignment(valueLabel, HPos.RIGHT);
+
+                table.add(idLabel, 0, row);
+                table.add(valueLabel, 1, row);
+                row++;
             }
+
+            // horizontal separator
+            Separator sep = new Separator();
+            sep.setStyle("-fx-background-color: #666;");
+            sep.setMinWidth(260);
+            sep.setPrefWidth(300);
+            sep.setMaxWidth(340);
+
+            // total score row
+            int total = ctx.getScoringPatterns().stream()
+                    .mapToInt(ScoringPatternDTO::getValue)
+                    .sum();
+
+            GridPane totalRow = new GridPane();
+            totalRow.setHgap(20);
+            totalRow.setAlignment(Pos.CENTER);
+            totalRow.setMinWidth(260);
+            totalRow.setPrefWidth(300);
+            totalRow.setMaxWidth(340);
+            totalRow.getColumnConstraints().addAll(col1, col2); // mirror table layout
+
+            Label totalLabel = new Label("TOTAL");
+            totalLabel.setStyle("-fx-text-fill: #ffffff; -fx-font-size: 14px; -fx-font-weight: bold;");
+
+            Label totalValue = new Label(String.valueOf(total));
+            totalValue.setStyle("-fx-text-fill: #ffffff; -fx-font-size: 14px; -fx-font-weight: bold;");
+            GridPane.setHalignment(totalValue, HPos.RIGHT);
+
+            totalRow.add(totalLabel, 0, 0);
+            totalRow.add(totalValue, 1, 0);
+
+            // populate box
+            box.getChildren().add(table);
+            box.getChildren().add(sep);
+            box.getChildren().add(totalRow);
         }
 
         return box;
