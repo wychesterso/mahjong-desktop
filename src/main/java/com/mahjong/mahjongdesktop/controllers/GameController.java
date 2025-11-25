@@ -719,7 +719,7 @@ public class GameController implements CleanupAware {
                     String seat = entry.getKey();
                     ScoringContextDTO ctx = entry.getValue();
 
-                    VBox winnerBox = buildWinnerBox(seat, ctx);
+                    VBox winnerBox = buildWinnerBox(seat, ctx, data.getLoserSeats().isEmpty());
                     resultContent.getChildren().add(winnerBox);
                 }
 
@@ -754,7 +754,7 @@ public class GameController implements CleanupAware {
         });
     }
 
-    private VBox buildWinnerBox(String seat, ScoringContextDTO ctx) {
+    private VBox buildWinnerBox(String seat, ScoringContextDTO ctx, boolean isSelfDraw) {
         VBox box = new VBox(6);
         box.setStyle("-fx-border-color: #666; -fx-border-width: 2; -fx-padding: 12; -fx-background-color: rgba(0,0,0,0.6); -fx-background-radius: 8;");
         box.setAlignment(Pos.CENTER);
@@ -782,11 +782,19 @@ public class GameController implements CleanupAware {
             addSpacer(hand, 16);
         }
 
+        boolean foundWinningGroup = false;
+
         // revealed groups
         if (ctx.getRevealedGroups() != null && !ctx.getRevealedGroups().isEmpty()) {
             HBox revealedGroups = new HBox(4);
+
             for (List<String> group : ctx.getRevealedGroups()) {
-                addMeld(group, revealedGroups);
+                if (!foundWinningGroup && !isSelfDraw && group.equals(ctx.getWinningGroup())) {
+                    foundWinningGroup = true;
+                    addMeldWithHighlight(revealedGroups, ctx, group);
+                } else {
+                    addMeld(group, revealedGroups);
+                }
             }
             hand.getChildren().add(revealedGroups);
 
@@ -795,36 +803,17 @@ public class GameController implements CleanupAware {
         }
 
         // concealed groups
-        boolean foundWinningGroup = false;
-
         if (ctx.getConcealedGroups() != null && !ctx.getConcealedGroups().isEmpty()) {
             HBox concealedGroups = new HBox(4);
 
             for (List<String> group : ctx.getConcealedGroups()) {
                 if (!foundWinningGroup && group.equals(ctx.getWinningGroup())) {
                     foundWinningGroup = true;
-                    boolean foundWinningTile = false;
-
-                    HBox winningGroupBox = new HBox(2);
-                    for (String tile : group) {
-                        TileNode t = new TileNode(tile);
-                        t.setClickable(false);
-                        if (!foundWinningTile && tile.equals(ctx.getWinningTile())) {
-                            foundWinningTile = true;
-                            t.setSelected(true);
-                        }
-                        enforceTileFixedSize(t);
-                        winningGroupBox.getChildren().add(t);
-                    }
-
-                    concealedGroups.getChildren().add(winningGroupBox);
-                    if (ctx.getConcealedGroups().getLast() != group) addSpacer(concealedGroups, 16);
-
+                    addMeldWithHighlight(concealedGroups, ctx, group);
                 } else {
                     addMeld(group, concealedGroups);
                 }
             }
-
             hand.getChildren().add(concealedGroups);
         }
 
@@ -910,6 +899,25 @@ public class GameController implements CleanupAware {
         }
 
         return box;
+    }
+
+    private void addMeldWithHighlight(HBox groups, ScoringContextDTO ctx, List<String> group) {
+        boolean foundWinningTile = false;
+
+        HBox winningGroupBox = new HBox(2);
+        for (String tile : group) {
+            TileNode t = new TileNode(tile);
+            t.setClickable(false);
+            if (!foundWinningTile && tile.equals(ctx.getWinningTile())) {
+                foundWinningTile = true;
+                t.setSelected(true);
+            }
+            enforceTileFixedSize(t);
+            winningGroupBox.getChildren().add(t);
+        }
+
+        groups.getChildren().add(winningGroupBox);
+        if (ctx.getConcealedGroups().getLast() != group) addSpacer(groups, 16);
     }
 
     private void toggleGameEndOverlay(boolean show) {
