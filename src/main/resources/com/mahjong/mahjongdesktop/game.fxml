@@ -17,10 +17,25 @@
                   style="-fx-padding: 12; -fx-alignment: CENTER; -fx-border-color: #336344; -fx-border-width: 1; -fx-background-color: #336344;">
                 <!-- name + turn indicator -->
                 <HBox alignment="CENTER" spacing="12">
+                    <Label fx:id="northZhong"
+                           text="莊"
+                           visible="false" managed="false"
+                           style="-fx-background-color: white;
+                                    -fx-border-color: #8B0000;
+                                    -fx-border-width: 2;
+                                    -fx-padding: 2 6;
+                                    -fx-font-size: 16px;
+                                    -fx-text-fill: #8B0000;
+                                    -fx-font-weight: bold;
+                                    -fx-text-overrun: clip;"/>
                     <Label fx:id="northNameLabel" text="North Player"
                            style="-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;"/>
-                    <Region fx:id="northTurnIndicator" prefWidth="0" prefHeight="0"
-                            style="-fx-border-color: transparent; -fx-border-radius: 5; -fx-padding: 4;"/>
+                    <Region fx:id="northTurnIndicator"
+                            visible="false"
+                            prefWidth="20" prefHeight="20"
+                            maxWidth="20" maxHeight="20"
+                            minWidth="20" minHeight="20"
+                            style="-fx-background-color: transparent; -fx-border-color: gold; -fx-border-width: 4; -fx-border-radius: 5;" />
                 </HBox>
 
                 <!-- flowers, melds, unrevealed hand -->
@@ -57,10 +72,25 @@
 
                 <!-- name + turn indicator -->
                 <HBox alignment="CENTER" spacing="12">
+                    <Label fx:id="southZhong"
+                           text="莊"
+                           visible="false" managed="false"
+                           style="-fx-background-color: white;
+                                    -fx-border-color: #8B0000;
+                                    -fx-border-width: 2;
+                                    -fx-padding: 2 6;
+                                    -fx-font-size: 16px;
+                                    -fx-text-fill: #8B0000;
+                                    -fx-font-weight: bold;
+                                    -fx-text-overrun: clip;"/>
                     <Label fx:id="southNameLabel" text="You"
                            style="-fx-text-fill: #ffff99; -fx-font-size: 14px; -fx-font-weight: bold;"/>
-                    <Region fx:id="southTurnIndicator" prefWidth="0" prefHeight="0"
-                            style="-fx-border-color: transparent; -fx-border-radius: 5; -fx-padding: 4;"/>
+                    <Region fx:id="southTurnIndicator"
+                            visible="false"
+                            prefWidth="20" prefHeight="20"
+                            maxWidth="20" maxHeight="20"
+                            minWidth="20" minHeight="20"
+                            style="-fx-background-color: transparent; -fx-border-color: gold; -fx-border-width: 4; -fx-border-radius: 5;" />
                 </HBox>
 
                 <!-- action buttons -->
@@ -86,6 +116,14 @@
                         <Label text="Select a Sheung:" style="-fx-text-fill: #ffffcc; -fx-font-size: 12;"/>
                         <HBox fx:id="sheungOptions" alignment="CENTER" spacing="6"/>
                         <Button fx:id="cancelSheungBtn" text="Cancel" style="-fx-padding: 6; -fx-font-size: 11px;"/>
+                    </HBox>
+
+                    <!-- kong selector -->
+                    <HBox fx:id="kongSelector" alignment="CENTER" spacing="12" style="-fx-padding: 8;" visible="false"
+                          managed="false">
+                        <Label text="Select a Kong:" style="-fx-text-fill: #ffffcc; -fx-font-size: 12;"/>
+                        <HBox fx:id="kongOptions" alignment="CENTER" spacing="6"/>
+                        <Button fx:id="cancelKongBtn" text="Cancel" style="-fx-padding: 6; -fx-font-size: 11px;"/>
                     </HBox>
 
                     <!-- decision buttons and sheung selector shouldn't coexist! -->
@@ -116,10 +154,25 @@
 
                     <!-- name + turn indicator -->
                     <HBox alignment="CENTER" spacing="12">
+                        <Label fx:id="westZhong"
+                               text="莊"
+                               visible="false" managed="false"
+                               style="-fx-background-color: white;
+                                    -fx-border-color: #8B0000;
+                                    -fx-border-width: 2;
+                                    -fx-padding: 2 6;
+                                    -fx-font-size: 16px;
+                                    -fx-text-fill: #8B0000;
+                                    -fx-font-weight: bold;
+                                    -fx-text-overrun: clip;"/>
                         <Label fx:id="westNameLabel" text="West Player"
                                style="-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;"/>
-                        <Region fx:id="westTurnIndicator" prefWidth="0" prefHeight="0"
-                                style="-fx-border-color: transparent; -fx-border-radius: 5; -fx-padding: 4;"/>
+                        <Region fx:id="westTurnIndicator"
+                                visible="false"
+                                prefWidth="20" prefHeight="20"
+                                maxWidth="20" maxHeight="20"
+                                minWidth="20" minHeight="20"
+                                style="-fx-background-color: transparent; -fx-border-color: gold; -fx-border-width: 4; -fx-border-radius: 5;" />
                     </HBox>
                 </VBox>
             </StackPane>
@@ -159,20 +212,55 @@
 
                     <!-- name + turn indicator -->
                     <HBox alignment="CENTER" spacing="12">
+                        <Label fx:id="eastZhong"
+                               text="莊"
+                               visible="false" managed="false"
+                               style="-fx-background-color: white;
+                                    -fx-border-color: #8B0000;
+                                    -fx-border-width: 2;
+                                    -fx-padding: 2 6;
+                                    -fx-font-size: 16px;
+                                    -fx-text-fill: #8B0000;
+                                    -fx-font-weight: bold;
+                                    -fx-text-overrun: clip;"/>
                         <Label fx:id="eastNameLabel" text="East Player"
                                style="-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold;"/>
-                        <Region fx:id="eastTurnIndicator" prefWidth="0" prefHeight="0"
-                                style="-fx-border-color: transparent; -fx-border-radius: 5; -fx-padding: 4;"/>
+                        <Region fx:id="eastTurnIndicator"
+                                visible="false"
+                                prefWidth="20" prefHeight="20"
+                                maxWidth="20" maxHeight="20"
+                                minWidth="20" minHeight="20"
+                                style="-fx-background-color: transparent; -fx-border-color: gold; -fx-border-width: 4; -fx-border-radius: 5;" />
                     </HBox>
                 </VBox>
             </StackPane>
         </right>
     </BorderPane>
 
+    <StackPane StackPane.alignment="BOTTOM_LEFT"
+               minHeight="70" prefHeight="70" maxHeight="70"
+               minWidth="150" prefWidth="150" maxWidth="150"
+               style="-fx-background-color: rgba(0,0,0,0.5);">
+        <Label fx:id="windSeatLabel"
+               text="東圈東局"
+               style="-fx-text-fill: white; -fx-font-size: 28px; -fx-font-weight: bold;"
+        />
+    </StackPane>
+
+    <StackPane StackPane.alignment="BOTTOM_RIGHT"
+               minHeight="70" prefHeight="70" maxHeight="70"
+               minWidth="175" prefWidth="175" maxWidth="175"
+               style="-fx-background-color: rgba(0,0,0,0.5);">
+        <Label fx:id="remainingTilesLabel"
+               text="Remaining Tiles: 0"
+               style=" -fx-text-fill: white; -fx-font-size: 15px; -fx-font-weight: bold; -fx-alignment: CENTER_RIGHT;"
+        />
+    </StackPane>
+
     <!-- RESULT OVERLAY -->
     <StackPane fx:id="resultOverlay"
                visible="false" managed="false"
-               style="-fx-background-color: rgba(0, 0, 0, 0.65);">
+               style="-fx-background-color: rgba(0, 0, 0, 0.8);">
 
         <VBox spacing="16"
               alignment="CENTER"
@@ -181,15 +269,24 @@
             <Label text="Game Results"
                    style="-fx-text-fill: white; -fx-font-size: 24px; -fx-font-weight: bold;" />
 
-            <VBox fx:id="resultContent" spacing="8"
-                  alignment="CENTER"
-                  style="-fx-padding: 10;" />
+            <ScrollPane fx:id="resultScrollPane"
+                        fitToWidth="true"
+                        pannable="true"
+                        style="
+                            -fx-background-color: transparent;
+                            -fx-background-insets: 0;
+                            -fx-padding: 0;"
+                        prefViewportHeight="500">
+                <VBox fx:id="resultContent" spacing="8"
+                        alignment="CENTER"
+                        style="-fx-padding: 10;" />
+            </ScrollPane>
 
             <HBox fx:id="nextGameDecisionBox"
                   visible="false" managed="false"
                   spacing="12" alignment="CENTER">
                 <Button fx:id="nextGameButton" text="Next Game" />
-                <Button fx:id="exitButton" text="Exit Room" />
+                <Button fx:id="exitButton" text="End Game" />
             </HBox>
         </VBox>
 

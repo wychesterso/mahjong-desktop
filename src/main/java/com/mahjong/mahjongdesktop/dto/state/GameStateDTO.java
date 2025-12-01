@@ -9,6 +9,9 @@ import java.util.Map;
  * Represents the complete game state sent from the server.
  */
 public class GameStateDTO {
+    @JsonProperty("gameNum")
+    private long gameNum;
+
     @JsonProperty("gameStateVersion")
     private long gameStateVersion;
 
@@ -51,12 +54,16 @@ public class GameStateDTO {
     @JsonProperty("numDraws")
     private int numDraws;
 
+    @JsonProperty("remainingTiles")
+    private int remainingTiles;
+
     public GameStateDTO() {}
 
-    public GameStateDTO(long gameStateVersion, TableDTO table, String currentTurn, String windSeat,
+    public GameStateDTO(long gameNum, long gameStateVersion, TableDTO table, String currentTurn, String windSeat,
                         String zhongSeat, Map<String, String> playerNames, Map<String, List<String>> expectedClaimants,
                         String lastDiscardedTile, String lastDiscarder, List<String> availableDecisions,
-                        String drawnTile, boolean gameActive, List<String> winnerSeats, int numDraws) {
+                        String drawnTile, boolean gameActive, List<String> winnerSeats, int numDraws, int remainingTiles) {
+        this.gameNum = gameNum;
         this.gameStateVersion = gameStateVersion;
         this.table = table;
         this.currentTurn = currentTurn;
@@ -71,6 +78,15 @@ public class GameStateDTO {
         this.gameActive = gameActive;
         this.winnerSeats = winnerSeats;
         this.numDraws = numDraws;
+        this.remainingTiles = remainingTiles;
+    }
+
+    public long getGameNum() {
+        return gameNum;
+    }
+
+    public void setGameNum(long gameNum) {
+        this.gameNum = gameNum;
     }
 
     public long getGameStateVersion() {
@@ -183,5 +199,13 @@ public class GameStateDTO {
 
     public void setNumDraws(int numDraws) {
         this.numDraws = numDraws;
+    }
+
+    public int getRemainingTiles() {
+        return remainingTiles;
+    }
+
+    public void setRemainingTiles(int remainingTiles) {
+        this.remainingTiles = remainingTiles;
     }
 }

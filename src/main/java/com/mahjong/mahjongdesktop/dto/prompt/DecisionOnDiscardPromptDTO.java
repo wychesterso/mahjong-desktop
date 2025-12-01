@@ -1,6 +1,7 @@
 package com.mahjong.mahjongdesktop.dto.prompt;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.mahjong.mahjongdesktop.dto.state.GameStateDTO;
 import com.mahjong.mahjongdesktop.dto.state.TableDTO;
 
 import java.util.List;
@@ -9,8 +10,8 @@ import java.util.List;
  * Prompt received when a decision needs to be made after another player discards a tile (WIN / KONG / PONG / SHEUNG / PASS).
  */
 public class DecisionOnDiscardPromptDTO {
-    @JsonProperty("table")
-    private TableDTO table;
+    @JsonProperty("state")
+    private GameStateDTO state;
 
     @JsonProperty("discardedTile")
     private String discardedTile;
@@ -26,20 +27,20 @@ public class DecisionOnDiscardPromptDTO {
 
     public DecisionOnDiscardPromptDTO() {}
 
-    public DecisionOnDiscardPromptDTO(TableDTO table, String discardedTile, String discarder, List<String> availableOptions, List<List<String>> sheungCombos) {
-        this.table = table;
+    public DecisionOnDiscardPromptDTO(GameStateDTO state, String discardedTile, String discarder, List<String> availableOptions, List<List<String>> sheungCombos) {
+        this.state = state;
         this.discardedTile = discardedTile;
         this.discarder = discarder;
         this.availableOptions = availableOptions;
         this.sheungCombos = sheungCombos;
     }
 
-    public TableDTO getTable() {
-        return table;
+    public GameStateDTO getState() {
+        return state;
     }
 
-    public void setTable(TableDTO table) {
-        this.table = table;
+    public void setState(GameStateDTO state) {
+        this.state = state;
     }
 
     public String getDiscardedTile() {

@@ -12,11 +12,15 @@ public class DecisionResponseDTO {
     @JsonProperty("decision")
     private String decision;
 
+    @JsonProperty("kongTile")
+    private String kongTile;
+
     public DecisionResponseDTO() {}
 
-    public DecisionResponseDTO(String roomId, String decision) {
+    public DecisionResponseDTO(String roomId, String decision, String kongTile) {
         this.roomId = roomId;
         this.decision = decision;
+        this.kongTile = kongTile;
     }
 
     public String getRoomId() {
@@ -33,5 +37,13 @@ public class DecisionResponseDTO {
 
     public void setDecision(String decision) {
         this.decision = decision;
+    }
+
+    public String getKongTile() {
+        return kongTile;
+    }
+
+    public void setKongTile(String kongTile) {
+        this.kongTile = kongTile;
     }
 }

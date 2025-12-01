@@ -1,26 +1,27 @@
 package com.mahjong.mahjongdesktop.dto.prompt;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.mahjong.mahjongdesktop.dto.state.GameStateDTO;
 import com.mahjong.mahjongdesktop.dto.state.TableDTO;
 
 /**
  * Prompt received for discarding a tile after a non-draw action (e.g. creating melds).
  */
 public class DiscardPromptDTO {
-    @JsonProperty("table")
-    private TableDTO table;
+    @JsonProperty("state")
+    private GameStateDTO state;
 
     public DiscardPromptDTO() {}
 
-    public DiscardPromptDTO(TableDTO table) {
-        this.table = table;
+    public DiscardPromptDTO(GameStateDTO state) {
+        this.state = state;
     }
 
-    public TableDTO getTable() {
-        return table;
+    public GameStateDTO getState() {
+        return state;
     }
 
-    public void setTable(TableDTO table) {
-        this.table = table;
+    public void setState(GameStateDTO state) {
+        this.state = state;
     }
 }

@@ -9,9 +9,6 @@ import java.util.Map;
  * Represents the game table state visible to a player.
  */
 public class TableDTO {
-    @JsonProperty("tableVersion")
-    private long tableVersion;
-
     @JsonProperty("discardPile")
     private List<String> discardPile;
 
@@ -26,21 +23,12 @@ public class TableDTO {
 
     public TableDTO() {}
 
-    public TableDTO(long tableVersion, List<String> discardPile, int drawPileSize,
+    public TableDTO(List<String> discardPile, int drawPileSize,
                     String selfSeat, Map<String, HandDTO> hands) {
-        this.tableVersion = tableVersion;
         this.discardPile = discardPile;
         this.drawPileSize = drawPileSize;
         this.selfSeat = selfSeat;
         this.hands = hands;
-    }
-
-    public long getTableVersion() {
-        return tableVersion;
-    }
-
-    public void setTableVersion(long tableVersion) {
-        this.tableVersion = tableVersion;
     }
 
     public List<String> getDiscardPile() {

@@ -10,13 +10,16 @@ import com.mahjong.mahjongdesktop.dto.prompt.DiscardPromptDTO;
 import com.mahjong.mahjongdesktop.dto.state.*;
 import com.mahjong.mahjongdesktop.network.GameMessageHandler;
 import com.mahjong.mahjongdesktop.ui.TileNode;
+import com.mahjong.mahjongdesktop.ui.TileSize;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.geometry.HPos;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Separator;
 import javafx.scene.layout.*;
 
@@ -26,6 +29,7 @@ import java.util.function.Consumer;
 public class GameController implements CleanupAware {
 
     // ============ player zones ============
+    @FXML private Label northZhong, southZhong, eastZhong, westZhong;
     @FXML private Label northNameLabel, southNameLabel, eastNameLabel, westNameLabel;
     @FXML private Region northTurnIndicator, southTurnIndicator, eastTurnIndicator, westTurnIndicator;
 
@@ -35,17 +39,23 @@ public class GameController implements CleanupAware {
     @FXML private HBox westMelds, westHand, westFlowers;
     @FXML private VBox westContainer;
     @FXML private HBox southMelds, southFlowers, southHand, southDrawnTile;
-    @FXML private StackPane resultOverlay;
-    @FXML private VBox resultContent;
 
     @FXML private GridPane discardPile;
+
+    @FXML private Label windSeatLabel, remainingTilesLabel;
+
+    @FXML private StackPane resultOverlay;
+    @FXML private VBox resultContent;
+    @FXML private ScrollPane resultScrollPane;
 
     // ============ buttons ============
     @FXML private Button pongButton, sheungButton, kongButton, winButton, passButton;
 
-    @FXML private HBox sheungSelector;
-    @FXML private HBox sheungOptions;
+    @FXML private HBox sheungSelector, sheungOptions;
     @FXML private Button cancelSheungBtn;
+
+    @FXML private HBox kongSelector, kongOptions;
+    @FXML private Button cancelKongBtn;
 
     @FXML private HBox nextGameDecisionBox;
     @FXML private Button nextGameButton, exitButton;
@@ -58,13 +68,17 @@ public class GameController implements CleanupAware {
     private boolean allowDiscard = true;
     private boolean decisionDraw = false; // true if prompted for decisionOnDraw, false if prompted for decisionOnDiscard
     private List<String> availableDecisions = List.of();
+
     private List<List<String>> sheungCombos = List.of();
-    private String lastDrawnTile = ""; // using something like this to fix?
+    private List<String> availableBrightKongs = List.of();
+    private List<String> availableDarkKongs = List.of();
+
     private String lastDiscardedTile = "";
 
     private final Map<String, Pane> handBoxes = new HashMap<>();
     private final Map<String, HBox> meldBoxes = new HashMap<>();
     private final Map<String, HBox> flowerBoxes = new HashMap<>();
+    private final Map<String, Label> zhongIndicators = new HashMap<>();
     private final Map<String, Label> nameLabels = new HashMap<>();
     private final Map<String, Region> turnIndicators = new HashMap<>();
 
@@ -84,14 +98,15 @@ public class GameController implements CleanupAware {
     private boolean registeredWithHandlers = false;
 
     // ============ game state version ============
+    private long gameNum = -1;
     private long gameStateVersion = -1;
-    private long tableVersion = -1;
 
     @FXML
     public void initialize() {
         // map seats to UI components (fixed)
         mapSeatsToUI();
         enforceFixedBoxSizes();
+        initializeResultScrollPane();
 
         // subscribe to game state updates
         handler = AppState.getGameMessageHandler();
@@ -120,7 +135,7 @@ public class GameController implements CleanupAware {
             if (initial != null && initial.getTable() != null) {
                 selfSeat = initial.getTable().getSelfSeat();
                 mapServerSeatsToUI(selfSeat);
-                onGameState(initial);
+                updateGameState(initial, false);
             }
         } else {
             System.err.println("GameMessageHandler not present when GameController initialized.");
@@ -129,7 +144,7 @@ public class GameController implements CleanupAware {
         // wire button handlers
         pongButton.setOnAction(e -> handleClaim("PONG"));
         sheungButton.setOnAction(e -> handleClaim("SHEUNG"));
-        kongButton.setOnAction(e -> handleClaim("BRIGHT_KONG"));
+        kongButton.setOnAction(e -> handleKongClaim());
         winButton.setOnAction(e -> handleClaim("WIN"));
         passButton.setOnAction(e -> handleClaim("PASS"));
         updateDecisionButtons(List.of());
@@ -138,6 +153,7 @@ public class GameController implements CleanupAware {
         exitButton.setOnAction(e -> sendEndGameDecision("EXIT"));
 
         cancelSheungBtn.setOnAction(e -> hideSheungSelector(true));
+        cancelKongBtn.setOnAction(e -> hideKongSelector(true));
     }
 
     private void rotateSideHands() {
@@ -161,6 +177,17 @@ public class GameController implements CleanupAware {
         westContainer.setPrefSize(50, 450);
         westContainer.setMinSize(50, 450);
         westContainer.setMaxSize(50, 450);
+    }
+
+    private void initializeResultScrollPane() {
+        resultScrollPane.setStyle("-fx-background-color: transparent; -fx-padding: 0;");
+        resultScrollPane.getContent().setStyle("-fx-background-color: transparent;");
+        resultScrollPane.viewportBoundsProperty().addListener((obs, oldV, newV) -> {
+            Node viewport = resultScrollPane.lookup(".viewport");
+            if (viewport != null) {
+                viewport.setStyle("-fx-background-color: transparent;");
+            }
+        });
     }
 
     // ================= SEAT MAPPING =================
@@ -210,6 +237,11 @@ public class GameController implements CleanupAware {
         flowerBoxes.put("SOUTH", southFlowers);
         flowerBoxes.put("EAST", eastFlowers);
         flowerBoxes.put("WEST", westFlowers);
+
+        zhongIndicators.put("NORTH", northZhong);
+        zhongIndicators.put("SOUTH", southZhong);
+        zhongIndicators.put("EAST", eastZhong);
+        zhongIndicators.put("WEST", westZhong);
 
         nameLabels.put("NORTH", northNameLabel);
         nameLabels.put("SOUTH", southNameLabel);
@@ -267,46 +299,34 @@ public class GameController implements CleanupAware {
     private boolean checkGameStateVersion(GameStateDTO state) {
         if (state == null) return false;
 
-        long v = state.getGameStateVersion();
-        if (v < gameStateVersion) {
+        long n = state.getGameNum(), v = state.getGameStateVersion();
+        if (n < gameNum || v < gameStateVersion) {
             // ignore old updates
-            System.out.println("[GameController] Ignoring stale game state " + v);
+            System.out.println("[GameController] Ignoring stale game state, gameNum=" + n + ", gameStateVersion=" + v);
             return false;
         }
 
-        if (!checkTableVersion(state.getTable())) return false;
-
+        gameNum = n;
         gameStateVersion = v;
-        return true;
-    }
-
-    /**
-     * Check the received table version.
-     * @return whether it is the newest version so far.
-     */
-    private boolean checkTableVersion(TableDTO table) {
-        if (table == null) return false;
-
-        long v = table.getTableVersion();
-        if (v < tableVersion) {
-            // ignore old updates
-            System.out.println("[GameController] Ignoring stale table state " + v);
-            return false;
-        }
-
-        tableVersion = v;
         return true;
     }
 
     // ================== GAME STATE UPDATES ==================
 
     private void onStartGame() {
+        gameNum = -1;
+        gameStateVersion = -1;
+
         Platform.runLater(() -> {
             toggleGameEndOverlay(false);
         });
     }
 
     private void onGameState(GameStateDTO state) {
+        updateGameState(state, true);
+    }
+
+    private void updateGameState(GameStateDTO state, boolean fromStateListener) {
         if (state == null || !checkGameStateVersion(state)) return;
 
         if (selfSeat == null && state.getTable() != null && state.getTable().getSelfSeat() != null) {
@@ -315,6 +335,10 @@ public class GameController implements CleanupAware {
         }
 
         Platform.runLater(() -> {
+            updateWindSeat(state);
+            updateRemainingTiles(state);
+
+            updateZhong(state);
             updatePlayerNames(state);
             updateTurnIndicators(state.getCurrentTurn());
 
@@ -327,8 +351,50 @@ public class GameController implements CleanupAware {
                 updateCenterDiscardPile(state.getTable().getDiscardPile());
             }
 
-            hideSheungSelector(false);
+            if (fromStateListener) {
+                availableDecisions = List.of();
+                hideSheungSelector(false);
+                hideKongSelector(false);
+            }
         });
+    }
+
+    private void updateWindSeat(GameStateDTO state) {
+        windSeatLabel.setText(
+                positionToDisplay(state.getWindSeat())
+                        + "圈"
+                        + positionToDisplay(state.getZhongSeat())
+                        + "局"
+        );
+    }
+
+    private String positionToDisplay(String position) {
+        switch (position) {
+            case "SOUTH" -> {return "南";}
+            case "NORTH" -> {return "北";}
+            case "EAST" -> {return "東";}
+            case "WEST" -> {return "西";}
+            default -> {return "";}
+        }
+    }
+
+    private void updateRemainingTiles(GameStateDTO state) {
+        remainingTilesLabel.setText("Remaining Tiles: " + state.getRemainingTiles());
+    }
+
+    private void updateZhong(GameStateDTO state) {
+        String zhongSeat = state.getZhongSeat();
+        if (zhongSeat == null) return;
+
+        for (String position : List.of("SOUTH", "NORTH", "EAST", "WEST")) {
+            String uiSeat = seatToUI.get(position);
+            Label zhongIndicator = zhongIndicators.get(uiSeat);
+            if (zhongIndicator != null) {
+                boolean isZhong = position.equals(zhongSeat);
+                zhongIndicator.setVisible(isZhong);
+                zhongIndicator.setManaged(isZhong);
+            }
+        }
     }
 
     private void updatePlayerNames(GameStateDTO state) {
@@ -352,16 +418,16 @@ public class GameController implements CleanupAware {
 
             Pane handBox = handBoxes.get(uiSeat);
             HBox flowerBox = flowerBoxes.get(uiSeat);
-            boolean isPlayerHand = "SOUTH".equals(uiSeat);
+            TileSize tileSize = "SOUTH".equals(uiSeat) ? TileSize.OWN_HAND : TileSize.OTHER_HAND;
 
             handBox.getChildren().clear();
             flowerBox.getChildren().clear();
 
             // flowers
             for (String flower : hand.getFlowers()) {
-                TileNode tile = new TileNode(flower);
+                TileNode tile = new TileNode(flower, tileSize);
                 tile.setClickable(false);
-                enforceTileFixedSize(tile);
+//                enforceTileFixedSize(tile);
                 flowerBox.getChildren().add(tile);
             }
 
@@ -369,18 +435,18 @@ public class GameController implements CleanupAware {
             List<String> displayTiles = new ArrayList<>(hand.getConcealedTiles());
 
             // sort tiles before rendering
-            if (isPlayerHand) {
+            if (tileSize == TileSize.OWN_HAND) {
                 // generate the newly-drawn tile separately
                 southDrawnTile.getChildren().clear();
 
                 if (state.getDrawnTile() != null && displayTiles.getLast().equals(state.getDrawnTile())) {
                     displayTiles.removeLast();
 
-                    TileNode tile = new TileNode(state.getDrawnTile());
+                    TileNode tile = new TileNode(state.getDrawnTile(), TileSize.OWN_HAND);
                     tile.setClickable(true);
                     tile.setOnTileClicked(this::onSouthHandTileClicked);
 
-                    enforceTileFixedSize(tile);
+//                    enforceTileFixedSize(tile);
                     southDrawnTile.getChildren().add(tile);
                 }
 
@@ -388,19 +454,19 @@ public class GameController implements CleanupAware {
                 displayTiles.sort(this::compareTileNames);
 
                 for (String tileName : displayTiles) {
-                    TileNode tile = new TileNode(tileName);
+                    TileNode tile = new TileNode(tileName, TileSize.OWN_HAND);
                     tile.setClickable(true);
                     tile.setOnTileClicked(this::onSouthHandTileClicked);
 
-                    enforceTileFixedSize(tile);
+//                    enforceTileFixedSize(tile);
                     handBox.getChildren().add(tile);
                 }
             } else {
                 for (int i = 0; i < hand.getConcealedTileCount(); i++) {
-                    TileNode backTile = new TileNode(null);
+                    TileNode backTile = new TileNode(null, TileSize.OTHER_HAND);
                     backTile.setFaceUp(false);
 
-                    enforceTileFixedSize(backTile);
+//                    enforceTileFixedSize(backTile);
                     handBox.getChildren().add(backTile);
                 }
             }
@@ -411,15 +477,17 @@ public class GameController implements CleanupAware {
         return Tile.valueOf(t1).compareTo(Tile.valueOf(t2));
     }
 
-    private void enforceTileFixedSize(TileNode tile) {
-        tile.setPrefSize(30, 40);
-        tile.setMinSize(30, 40);
-        tile.setMaxSize(30, 40);
-    }
+//    private void enforceTileFixedSize(TileNode tile) {
+//        tile.setPrefSize(30, 40);
+//        tile.setMinSize(30, 40);
+//        tile.setMaxSize(30, 40);
+//    }
 
     private void updateMelds(GameStateDTO state) {
         for (String seat : new String[]{"NORTH", "SOUTH", "EAST", "WEST"}) {
+            TileSize tileSize = seat.equals(selfSeat) ? TileSize.OWN_HAND : TileSize.OTHER_HAND;
             HandDTO hand = state.getTable().getHands().get(seat);
+
             String uiSeat = seatToUI.get(seat);
             HBox meldBox = meldBoxes.get(uiSeat);
             if (meldBox == null || hand == null) continue;
@@ -429,21 +497,21 @@ public class GameController implements CleanupAware {
             // sheungs
             if (hand.getSheungs() != null) {
                 for (List<String> sheung : hand.getSheungs()) {
-                    addMeld(sheung, meldBox);
+                    addMeld(sheung, meldBox, tileSize, true);
                 }
             }
 
             // pongs
             if (hand.getPongs() != null) {
                 for (List<String> pong : hand.getPongs()) {
-                    addMeld(pong, meldBox);
+                    addMeld(pong, meldBox, tileSize, true);
                 }
             }
 
             // kongs
             if (hand.getBrightKongs() != null) {
                 for (List<String> kong : hand.getBrightKongs()) {
-                    addMeld(kong, meldBox);
+                    addMeld(kong, meldBox, tileSize, true);
                 }
             }
 
@@ -451,42 +519,40 @@ public class GameController implements CleanupAware {
                 if (hand.getDarkKongs().isEmpty()) {
                     // generate face down dark kongs for opponents
                     for (int i = 0; i < hand.getDarkKongCount(); i++) {
-                        addDarkMeld(meldBox, 4);
+                        addDarkMeld(meldBox, 4, tileSize);
                     }
                 } else {
                     // generate own dark kongs
                     for (List<String> kong : hand.getDarkKongs()) {
-                        addMeld(kong, meldBox);
+                        addMeld(kong, meldBox, tileSize, true);
                     }
                 }
             }
         }
     }
 
-    private void addMeld(List<String> group, HBox meldBox) {
+    private void addMeld(List<String> group, HBox meldBox, TileSize tileSize, boolean addSpacer) {
         HBox box = new HBox(2);
         for (String tile : group) {
-            TileNode t = new TileNode(tile);
+            TileNode t = new TileNode(tile, tileSize);
             t.setClickable(false);
-            enforceTileFixedSize(t);
+//            enforceTileFixedSize(t);
             box.getChildren().add(t);
         }
 
         meldBox.getChildren().add(box);
 
         // add spacer after each meld
-        Region spacer = new Region();
-        spacer.setPrefWidth(16);
-        meldBox.getChildren().add(spacer);
+        if (addSpacer) addSpacer(meldBox, 16);
     }
 
-    private void addDarkMeld(HBox meldBox, int numTiles) {
+    private void addDarkMeld(HBox meldBox, int numTiles, TileSize tileSize) {
         HBox box = new HBox(2);
         for (int i = 0; i < numTiles; i++) {
-            TileNode t = new TileNode(null);
+            TileNode t = new TileNode(null, tileSize);
             t.setClickable(false);
             t.setFaceUp(false);
-            enforceTileFixedSize(t);
+//            enforceTileFixedSize(t);
             box.getChildren().add(t);
         }
 
@@ -504,9 +570,9 @@ public class GameController implements CleanupAware {
 
         int row = 0, col = 0;
         for (String tileName : discards) {
-            TileNode tile = new TileNode(tileName);
+            TileNode tile = new TileNode(tileName, TileSize.DISCARD_PILE);
             tile.setClickable(false);
-            enforceTileFixedSize(tile);
+//            enforceTileFixedSize(tile);
             discardPile.add(tile, col, row);
 
             col++;
@@ -520,17 +586,20 @@ public class GameController implements CleanupAware {
     // ================== PROMPTS ==================
 
     private void onDecisionOnDrawPrompt(DecisionOnDrawPromptDTO data) {
-        if (data == null || !checkTableVersion(data.getTable())) return;
+        if (data == null) return;
         decisionDraw = true;
         availableDecisions = data.getAvailableOptions();
+        availableBrightKongs = data.getAvailableBrightKongs();
+        availableDarkKongs = data.getAvailableDarkKongs();
 
         Platform.runLater(() -> {
+            updateGameState(data.getState(), false);
             updateDecisionButtons(data.getAvailableOptions());
         });
     }
 
     private void onDecisionOnDiscardPrompt(DecisionOnDiscardPromptDTO data) {
-        if (data == null || !checkTableVersion(data.getTable())) return;
+        if (data == null) return;
         decisionDraw = false;
         availableDecisions = data.getAvailableOptions();
         lastDiscardedTile = data.getDiscardedTile();
@@ -538,22 +607,29 @@ public class GameController implements CleanupAware {
 
         Platform.runLater(() -> {
             // TODO: Maybe highlight discarded tile (data.getDiscardedTile) and put some marker on discarder (data.getDiscarder)
+            updateGameState(data.getState(), false);
             updateDecisionButtons(data.getAvailableOptions());
         });
     }
 
     private void onDiscardPrompt(DiscardPromptDTO data) {
         System.out.println("[GameController] onDiscardPrompt");
-        if (data == null || !checkTableVersion(data.getTable())) return;
+        if (data == null) return;
 
-        Platform.runLater(this::enableDiscard);
+        Platform.runLater(() -> {
+            updateGameState(data.getState(), false);
+            enableDiscard();
+        });
     }
 
     private void onDiscardAfterDrawPrompt(DiscardAfterDrawPromptDTO data) {
         System.out.println("[GameController] onDiscardAfterDrawPrompt");
-        if (data == null || !checkTableVersion(data.getTable())) return;
+        if (data == null) return;
 
-        Platform.runLater(this::enableDiscard);
+        Platform.runLater(() -> {
+            updateGameState(data.getState(), false);
+            enableDiscard();
+        });
     }
 
     private void enableDiscard() {
@@ -574,7 +650,7 @@ public class GameController implements CleanupAware {
 
     private void updateTurnIndicators(String currentTurn) {
         for (Region indicator : turnIndicators.values()) {
-            indicator.setStyle("-fx-border-color: transparent; -fx-border-radius: 5; -fx-padding: 4;");
+            indicator.setVisible(false);
         }
 
         String uiSeat = seatToUI.get(currentTurn);
@@ -582,7 +658,7 @@ public class GameController implements CleanupAware {
 
         Region current = turnIndicators.get(uiSeat);
         if (current != null) {
-            current.setStyle("-fx-border-color: gold; -fx-border-radius: 5; -fx-padding: 4; -fx-border-width: 2;");
+            current.setVisible(true);
         }
     }
 
@@ -628,24 +704,100 @@ public class GameController implements CleanupAware {
     private void handleClaim(String decision) {
         if (AppState.getGameSocketClient() != null) {
             if (decisionDraw) {
-                AppState.getGameSocketClient().sendDrawDecision(decision);
+                AppState.getGameSocketClient().sendDrawDecision(decision, null);
+                availableDecisions = List.of();
             } else {
                 if (!decision.equals("SHEUNG")) {
                     AppState.getGameSocketClient().sendDiscardClaim(decision, List.of());
+                    availableDecisions = List.of();
                 } else if (sheungCombos.size() == 1) {
                     AppState.getGameSocketClient().sendDiscardClaim(decision, sheungCombos.getFirst());
+                    availableDecisions = List.of();
                 } else {
                     showSheungSelector();
                 }
             }
         }
 
-        availableDecisions = List.of();
+        Platform.runLater(() -> {
+            // hide all buttons
+            updateDecisionButtons(List.of());
+        });
+    }
+
+    private void handleKongClaim() {
+        if (decisionDraw) {
+            int numBrightKongs = availableBrightKongs.size(), numDarkKongs = availableDarkKongs.size();
+            if (numBrightKongs + numDarkKongs > 1) {
+                showKongSelector();
+            } else if (numBrightKongs == 1) {
+                AppState.getGameSocketClient().sendDrawDecision("BRIGHT_KONG", availableBrightKongs.getFirst());
+                availableDecisions = List.of();
+            } else {
+                AppState.getGameSocketClient().sendDrawDecision("DARK_KONG", availableDarkKongs.getFirst());
+                availableDecisions = List.of();
+            }
+        } else {
+            AppState.getGameSocketClient().sendDiscardClaim("BRIGHT_KONG", List.of());
+            availableDecisions = List.of();
+        }
 
         Platform.runLater(() -> {
             // hide all buttons
             updateDecisionButtons(List.of());
         });
+    }
+
+    // ================== KONG SELECTION ==================
+
+    private void showKongSelector() {
+        kongOptions.getChildren().clear();
+
+        for (String kongTile : availableBrightKongs) {
+            addKongToSelector(kongTile, "BRIGHT_KONG");
+        }
+        for (String kongTile : availableDarkKongs) {
+            addKongToSelector(kongTile, "DARK_KONG");
+        }
+
+        kongSelector.setVisible(true);
+        kongSelector.setManaged(true);
+    }
+
+    private void hideKongSelector(boolean showDecisionButtons) {
+        kongSelector.setVisible(false);
+        kongSelector.setManaged(false);
+        kongOptions.getChildren().clear();
+
+        if (showDecisionButtons) {
+            updateDecisionButtons(availableDecisions);
+        } else {
+            updateDecisionButtons(List.of());
+        }
+    }
+
+    private void addKongToSelector(String kongTile, String decision) {
+        HBox row = new HBox(5);
+        row.setAlignment(Pos.CENTER);
+
+        for (int i = 0; i < 4; i++) {
+            TileNode tile = new TileNode(kongTile, TileSize.OWN_HAND);
+            tile.setClickable(false);
+            row.getChildren().add(tile);
+        }
+
+        row.setOnMouseClicked(e -> {
+            AppState.getGameSocketClient().sendDrawDecision(decision, kongTile);
+            availableDecisions = List.of();
+            hideKongSelector(false);
+        });
+
+        kongOptions.getChildren().add(row);
+
+        // add spacer after each combo
+        Region spacer = new Region();
+        spacer.setPrefWidth(16);
+        kongOptions.getChildren().add(spacer);
     }
 
     // ================== SHEUNG SELECTION ==================
@@ -662,14 +814,14 @@ public class GameController implements CleanupAware {
             row.setAlignment(Pos.CENTER);
 
             for (String tileName : newCombo) {
-                TileNode tile = new TileNode(tileName);
+                TileNode tile = new TileNode(tileName, TileSize.OWN_HAND);
                 tile.setClickable(false);
-                tile.setPrefSize(32, 50);
                 row.getChildren().add(tile);
             }
 
             row.setOnMouseClicked(e -> {
                 AppState.getGameSocketClient().sendDiscardClaim("SHEUNG", combo);
+                availableDecisions = List.of();
                 hideSheungSelector(false);
             });
 
@@ -758,8 +910,10 @@ public class GameController implements CleanupAware {
         VBox box = new VBox(6);
         box.setStyle("-fx-border-color: #666; -fx-border-width: 2; -fx-padding: 12; -fx-background-color: rgba(0,0,0,0.6); -fx-background-radius: 8;");
         box.setAlignment(Pos.CENTER);
+        box.setPrefWidth(1200);
+        box.setMaxWidth(1200);
 
-        Label seatLabel = new Label("Winner: " + seat);
+        Label seatLabel = new Label("Winner: " + seatToName.get(seat));
         seatLabel.setStyle("-fx-text-fill: #ffffaa; -fx-font-size: 18px; -fx-font-weight: bold;");
         box.getChildren().add(seatLabel);
 
@@ -770,9 +924,9 @@ public class GameController implements CleanupAware {
         if (ctx.getFlowers() != null && !ctx.getFlowers().isEmpty()) {
             HBox flowerBox = new HBox(2);
             for (String flower : ctx.getFlowers()) {
-                TileNode tile = new TileNode(flower);
+                TileNode tile = new TileNode(flower, TileSize.DISCARD_PILE);
                 tile.setClickable(false);
-                enforceTileFixedSize(tile);
+//                enforceTileFixedSize(tile);
                 flowerBox.getChildren().add(tile);
             }
             hand.getChildren().add(flowerBox);
@@ -788,16 +942,19 @@ public class GameController implements CleanupAware {
         if (ctx.getRevealedGroups() != null && !ctx.getRevealedGroups().isEmpty()) {
             HBox revealedGroups = new HBox(4);
 
-            for (List<String> group : ctx.getRevealedGroups()) {
+            for (int i = 0; i < ctx.getRevealedGroups().size(); i++) {
+                List<String> group = ctx.getRevealedGroups().get(i);
+
                 if (!foundWinningGroup && !isSelfDraw && group.equals(ctx.getWinningGroup())) {
                     foundWinningGroup = true;
-                    addMeldWithHighlight(revealedGroups, ctx, group);
+                    addMeldWithHighlight(revealedGroups, ctx, group, i != ctx.getRevealedGroups().size() - 1);
                 } else {
-                    addMeld(group, revealedGroups);
+                    addMeld(group, revealedGroups, TileSize.DISCARD_PILE, i != ctx.getRevealedGroups().size() - 1);
                 }
             }
             hand.getChildren().add(revealedGroups);
 
+            addSpacer(hand, 16);
             addSeparator(hand);
             addSpacer(hand, 16);
         }
@@ -806,12 +963,14 @@ public class GameController implements CleanupAware {
         if (ctx.getConcealedGroups() != null && !ctx.getConcealedGroups().isEmpty()) {
             HBox concealedGroups = new HBox(4);
 
-            for (List<String> group : ctx.getConcealedGroups()) {
+            for (int i = 0; i < ctx.getConcealedGroups().size(); i++) {
+                List<String> group = ctx.getConcealedGroups().get(i);
+
                 if (!foundWinningGroup && group.equals(ctx.getWinningGroup())) {
                     foundWinningGroup = true;
-                    addMeldWithHighlight(concealedGroups, ctx, group);
+                    addMeldWithHighlight(concealedGroups, ctx, group, i != ctx.getConcealedGroups().size() - 1);
                 } else {
-                    addMeld(group, concealedGroups);
+                    addMeld(group, concealedGroups, TileSize.DISCARD_PILE, i != ctx.getConcealedGroups().size() - 1);
                 }
             }
             hand.getChildren().add(concealedGroups);
@@ -828,7 +987,7 @@ public class GameController implements CleanupAware {
 
             // table
             GridPane table = new GridPane();
-            table.setHgap(20);
+            table.setHgap(10);
             table.setVgap(6);
             table.setAlignment(Pos.CENTER);
 
@@ -901,23 +1060,23 @@ public class GameController implements CleanupAware {
         return box;
     }
 
-    private void addMeldWithHighlight(HBox groups, ScoringContextDTO ctx, List<String> group) {
+    private void addMeldWithHighlight(HBox groups, ScoringContextDTO ctx, List<String> group, boolean addSpacer) {
         boolean foundWinningTile = false;
 
         HBox winningGroupBox = new HBox(2);
         for (String tile : group) {
-            TileNode t = new TileNode(tile);
+            TileNode t = new TileNode(tile, TileSize.DISCARD_PILE);
             t.setClickable(false);
             if (!foundWinningTile && tile.equals(ctx.getWinningTile())) {
                 foundWinningTile = true;
                 t.setSelected(true);
             }
-            enforceTileFixedSize(t);
+//            enforceTileFixedSize(t);
             winningGroupBox.getChildren().add(t);
         }
 
         groups.getChildren().add(winningGroupBox);
-        if (ctx.getConcealedGroups().getLast() != group) addSpacer(groups, 16);
+        if (addSpacer) addSpacer(groups, 16);
     }
 
     private void toggleGameEndOverlay(boolean show) {
@@ -960,6 +1119,8 @@ public class GameController implements CleanupAware {
                 AppNavigator.switchTo("room.fxml");
             });
         } else {
+            gameStateVersion = -1;
+
             Platform.runLater(() -> {
                 nextGameDecisionBox.setVisible(false);
                 nextGameDecisionBox.setManaged(false);

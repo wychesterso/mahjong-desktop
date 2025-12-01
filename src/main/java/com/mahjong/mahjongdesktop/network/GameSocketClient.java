@@ -77,12 +77,12 @@ public class GameSocketClient {
         stompSession.send("/app/game/respondDiscard", dto);
     }
 
-    public void sendDrawDecision(String decision) {
+    public void sendDrawDecision(String decision, String kongTile) {
         if (!isConnected()) {
             System.err.println("Could not send draw decision!");
             return;
         }
-        DecisionResponseDTO dto = new DecisionResponseDTO(roomId, decision);
+        DecisionResponseDTO dto = new DecisionResponseDTO(roomId, decision, kongTile);
         stompSession.send("/app/game/respondDrawDecision", dto);
     }
 

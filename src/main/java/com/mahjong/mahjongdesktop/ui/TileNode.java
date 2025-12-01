@@ -15,10 +15,13 @@ import javafx.scene.layout.StackPane;
 public class TileNode extends StackPane {
 
     private final String tileName;
+    private final TileSize tileSize;
+
     private boolean selected;
     private boolean faceUp;
     private boolean clickable;
     private Label tileLabel;
+
     private Consumer<TileNode> onTileClicked;
     private int lastClickCount = 0;
 
@@ -26,8 +29,10 @@ public class TileNode extends StackPane {
      * Create a tile node.
      * @param tileName the tile name (e.g., "CIRCLE_5") or null for unknown
      */
-    public TileNode(String tileName) {
+    public TileNode(String tileName, TileSize tileSize) {
         this.tileName = tileName;
+        this.tileSize = tileSize;
+
         this.selected = false;
         this.faceUp = true;
         this.clickable = false;
@@ -39,13 +44,29 @@ public class TileNode extends StackPane {
 
     private void initializeUI() {
         tileLabel = new Label(getFaceUpDisplay());
-        tileLabel.setStyle("-fx-font-size: 22px; -fx-text-alignment: center; -fx-text-fill: black; -fx-background-color: #dddddd; -fx-padding: 1;");
+
+        int fontSize, tileWidth, tileHeight;
+        if (tileSize == TileSize.OWN_HAND) {
+            fontSize = 32;
+            tileWidth = 32;
+            tileHeight = 52;
+        } else if (tileSize == TileSize.DISCARD_PILE) {
+            fontSize = 26;
+            tileWidth = 27;
+            tileHeight = 45;
+        } else {
+            fontSize = 19;
+            tileWidth = 20;
+            tileHeight = 35;
+        }
+
+        tileLabel.setStyle("-fx-font-size: " + fontSize + "px; -fx-text-alignment: center; -fx-text-fill: black; -fx-background-color: #dddddd; -fx-padding: 1;");
 
         this.setStyle("-fx-border-color: #4a6a5a; -fx-border-width: 1; -fx-padding: 0;");
-        this.setPrefWidth(40);
-        this.setPrefHeight(40);
-        this.setMinWidth(40);
-        this.setMinHeight(40);
+        this.setPrefSize(tileWidth, tileHeight);
+        this.setMinSize(tileWidth, tileHeight);
+        this.setMaxSize(tileWidth, tileHeight);
+
         this.getChildren().add(tileLabel);
     }
 
