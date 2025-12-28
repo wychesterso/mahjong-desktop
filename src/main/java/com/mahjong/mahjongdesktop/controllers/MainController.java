@@ -1,8 +1,10 @@
 package com.mahjong.mahjongdesktop.controllers;
 
+import com.mahjong.mahjongdesktop.AppState;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
+import javafx.scene.control.Button;
 import javafx.scene.layout.StackPane;
 
 import java.io.IOException;
@@ -11,11 +13,14 @@ public class MainController {
 
     private Object currentChildController;
 
-    @FXML
-    private StackPane contentArea;
+    @FXML private StackPane contentArea;
+    @FXML private Button logoutButton;
 
     @FXML
     public void initialize() {
+        logoutButton.visibleProperty().bind(AppState.loggedInProperty());
+        logoutButton.managedProperty().bind(AppState.loggedInProperty());
+
         if (com.mahjong.mahjongdesktop.AppState.getJwt() == null) {
             loadView("login.fxml");
         } else {
@@ -35,7 +40,7 @@ public class MainController {
 
     @FXML
     public void logout() {
-        com.mahjong.mahjongdesktop.AppState.clear();
+        AppState.clear();
         loadView("login.fxml");
     }
 

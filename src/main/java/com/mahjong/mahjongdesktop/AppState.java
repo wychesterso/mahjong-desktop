@@ -6,6 +6,8 @@ import com.mahjong.mahjongdesktop.network.GameSocketClient;
 
 import java.util.Base64;
 import java.util.Map;
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 
 public class AppState {
     private static String jwt;
@@ -16,6 +18,16 @@ public class AppState {
     private static GameSocketClient gameSocketClient;
     private static GameMessageHandler gameMessageHandler;
 
+    private static final BooleanProperty loggedIn = new SimpleBooleanProperty(false);
+
+    public static BooleanProperty loggedInProperty() {
+        return loggedIn;
+    }
+
+    public static boolean isLoggedIn() {
+        return loggedIn.get();
+    }
+
     public static String getJwt() {
         return jwt;
     }
@@ -23,6 +35,7 @@ public class AppState {
     public static void setJwt(String token) {
         jwt = token;
         userId = decodeUserId(token);
+        loggedIn.set(token != null);
     }
 
     private static String decodeUserId(String jwt) {
@@ -81,7 +94,12 @@ public class AppState {
 
     public static void clear() {
         jwt = null;
+        userId = null;
         currentRoomId = null;
+        currentHostId = null;
         gameSocketClient = null;
+        gameMessageHandler = null;
+
+        loggedIn.set(false);
     }
 }

@@ -303,6 +303,7 @@ public class GameController implements CleanupAware {
         if (n < gameNum || v < gameStateVersion) {
             // ignore old updates
             System.out.println("[GameController] Ignoring stale game state, gameNum=" + n + ", gameStateVersion=" + v);
+            System.out.println("[GameController] storedGameNum=" + gameNum + ", storedGameStateVersion=" + gameStateVersion);
             return false;
         }
 
@@ -494,37 +495,13 @@ public class GameController implements CleanupAware {
 
             meldBox.getChildren().clear();
 
-            // sheungs
-            if (hand.getSheungs() != null) {
-                for (List<String> sheung : hand.getSheungs()) {
-                    addMeld(sheung, meldBox, tileSize, true);
-                }
-            }
-
-            // pongs
-            if (hand.getPongs() != null) {
-                for (List<String> pong : hand.getPongs()) {
-                    addMeld(pong, meldBox, tileSize, true);
-                }
-            }
-
-            // kongs
-            if (hand.getBrightKongs() != null) {
-                for (List<String> kong : hand.getBrightKongs()) {
-                    addMeld(kong, meldBox, tileSize, true);
-                }
-            }
-
-            if (hand.getDarkKongs() != null) {
-                if (hand.getDarkKongs().isEmpty()) {
-                    // generate face down dark kongs for opponents
-                    for (int i = 0; i < hand.getDarkKongCount(); i++) {
+            // revealed melds
+            if (hand.getRevealedMelds() != null) {
+                for (List<String> meld : hand.getRevealedMelds()) {
+                    if (meld.getFirst() == null) {
                         addDarkMeld(meldBox, 4, tileSize);
-                    }
-                } else {
-                    // generate own dark kongs
-                    for (List<String> kong : hand.getDarkKongs()) {
-                        addMeld(kong, meldBox, tileSize, true);
+                    } else {
+                        addMeld(meld, meldBox, tileSize, true);
                     }
                 }
             }

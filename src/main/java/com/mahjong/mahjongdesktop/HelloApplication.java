@@ -16,7 +16,7 @@ public class HelloApplication extends Application {
         AppNavigator.setMainController(mainController);
 
         stage.setScene(scene);
-        stage.setTitle("Mahjong Client");
+        stage.setTitle("16-Tiles Mahjong");
         stage.show();
     }
 

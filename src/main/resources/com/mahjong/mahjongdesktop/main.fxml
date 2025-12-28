@@ -10,9 +10,9 @@
     <!-- top bar -->
     <top>
         <HBox spacing="10" style="-fx-padding: 10;" alignment="CENTER_LEFT">
-            <Label text="Sixteen Mahjong" style="-fx-font-size: 18px;" />
+            <Label text="16-Tiles Mahjong" style="-fx-font-size: 18px;" />
             <Region fx:id="spacer" HBox.hgrow="ALWAYS"/>
-            <Button text="Logout" onAction="#logout" />
+            <Button fx:id="logoutButton" text="Logout" onAction="#logout" />
         </HBox>
     </top>
 

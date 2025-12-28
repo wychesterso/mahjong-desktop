@@ -15,20 +15,8 @@ public class HandDTO {
     @JsonProperty("concealedTileCount")
     private int concealedTileCount;
 
-    @JsonProperty("sheungs")
-    private List<List<String>> sheungs;
-
-    @JsonProperty("pongs")
-    private List<List<String>> pongs;
-
-    @JsonProperty("brightKongs")
-    private List<List<String>> brightKongs;
-
-    @JsonProperty("darkKongs")
-    private List<List<String>> darkKongs;
-
-    @JsonProperty("darkKongCount")
-    private int darkKongCount;
+    @JsonProperty("revealedMelds")
+    private List<List<String>> revealedMelds;
 
     @JsonProperty("flowers")
     private Set<String> flowers;
@@ -36,16 +24,10 @@ public class HandDTO {
     public HandDTO() {}
 
     public HandDTO(List<String> concealedTiles, int concealedTileCount,
-                   List<List<String>> sheungs, List<List<String>> pongs,
-                   List<List<String>> brightKongs, List<List<String>> darkKongs,
-                   int darkKongCount, Set<String> flowers) {
+                   List<List<String>> revealedMelds, Set<String> flowers) {
         this.concealedTiles = concealedTiles;
         this.concealedTileCount = concealedTileCount;
-        this.sheungs = sheungs;
-        this.pongs = pongs;
-        this.brightKongs = brightKongs;
-        this.darkKongs = darkKongs;
-        this.darkKongCount = darkKongCount;
+        this.revealedMelds = revealedMelds;
         this.flowers = flowers;
     }
 
@@ -65,44 +47,12 @@ public class HandDTO {
         this.concealedTileCount = concealedTileCount;
     }
 
-    public List<List<String>> getSheungs() {
-        return sheungs;
+    public List<List<String>> getRevealedMelds() {
+        return revealedMelds;
     }
 
-    public void setSheungs(List<List<String>> sheungs) {
-        this.sheungs = sheungs;
-    }
-
-    public List<List<String>> getPongs() {
-        return pongs;
-    }
-
-    public void setPongs(List<List<String>> pongs) {
-        this.pongs = pongs;
-    }
-
-    public List<List<String>> getBrightKongs() {
-        return brightKongs;
-    }
-
-    public void setBrightKongs(List<List<String>> brightKongs) {
-        this.brightKongs = brightKongs;
-    }
-
-    public List<List<String>> getDarkKongs() {
-        return darkKongs;
-    }
-
-    public void setDarkKongs(List<List<String>> darkKongs) {
-        this.darkKongs = darkKongs;
-    }
-
-    public int getDarkKongCount() {
-        return darkKongCount;
-    }
-
-    public void setDarkKongCount(int darkKongCount) {
-        this.darkKongCount = darkKongCount;
+    public void setRevealedMelds(List<List<String>> revealedMelds) {
+        this.revealedMelds = revealedMelds;
     }
 
     public Set<String> getFlowers() {
